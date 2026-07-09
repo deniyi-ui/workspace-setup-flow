@@ -9,16 +9,28 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OnboardingStartRouteImport } from './routes/onboarding.start'
 import { Route as OnboardingProfileRouteImport } from './routes/onboarding.profile'
 import { Route as OnboardingInviteRouteImport } from './routes/onboarding.invite'
 import { Route as OnboardingConnectRouteImport } from './routes/onboarding.connect'
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -49,7 +61,9 @@ const OnboardingConnectRoute = OnboardingConnectRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
   '/onboarding': typeof OnboardingRouteWithChildren
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/onboarding/connect': typeof OnboardingConnectRoute
   '/onboarding/invite': typeof OnboardingInviteRoute
   '/onboarding/profile': typeof OnboardingProfileRoute
@@ -57,7 +71,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
   '/onboarding': typeof OnboardingRouteWithChildren
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/onboarding/connect': typeof OnboardingConnectRoute
   '/onboarding/invite': typeof OnboardingInviteRoute
   '/onboarding/profile': typeof OnboardingProfileRoute
@@ -66,7 +82,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
   '/onboarding': typeof OnboardingRouteWithChildren
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/onboarding/connect': typeof OnboardingConnectRoute
   '/onboarding/invite': typeof OnboardingInviteRoute
   '/onboarding/profile': typeof OnboardingProfileRoute
@@ -76,7 +94,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/dashboard'
     | '/onboarding'
+    | '/sitemap.xml'
     | '/onboarding/connect'
     | '/onboarding/invite'
     | '/onboarding/profile'
@@ -84,7 +104,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/dashboard'
     | '/onboarding'
+    | '/sitemap.xml'
     | '/onboarding/connect'
     | '/onboarding/invite'
     | '/onboarding/profile'
@@ -92,7 +114,9 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/dashboard'
     | '/onboarding'
+    | '/sitemap.xml'
     | '/onboarding/connect'
     | '/onboarding/invite'
     | '/onboarding/profile'
@@ -101,16 +125,32 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DashboardRoute: typeof DashboardRoute
   OnboardingRoute: typeof OnboardingRouteWithChildren
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/onboarding': {
       id: '/onboarding'
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -171,7 +211,9 @@ const OnboardingRouteWithChildren = OnboardingRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DashboardRoute: DashboardRoute,
   OnboardingRoute: OnboardingRouteWithChildren,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
