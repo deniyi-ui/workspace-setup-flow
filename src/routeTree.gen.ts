@@ -9,38 +9,150 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as OnboardingStartRouteImport } from './routes/onboarding.start'
+import { Route as OnboardingProfileRouteImport } from './routes/onboarding.profile'
+import { Route as OnboardingInviteRouteImport } from './routes/onboarding.invite'
+import { Route as OnboardingConnectRouteImport } from './routes/onboarding.connect'
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OnboardingStartRoute = OnboardingStartRouteImport.update({
+  id: '/start',
+  path: '/start',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingProfileRoute = OnboardingProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingInviteRoute = OnboardingInviteRouteImport.update({
+  id: '/invite',
+  path: '/invite',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingConnectRoute = OnboardingConnectRouteImport.update({
+  id: '/connect',
+  path: '/connect',
+  getParentRoute: () => OnboardingRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
+  '/onboarding': typeof OnboardingRouteWithChildren
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/onboarding/connect': typeof OnboardingConnectRoute
+  '/onboarding/invite': typeof OnboardingInviteRoute
+  '/onboarding/profile': typeof OnboardingProfileRoute
+  '/onboarding/start': typeof OnboardingStartRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
+  '/onboarding': typeof OnboardingRouteWithChildren
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/onboarding/connect': typeof OnboardingConnectRoute
+  '/onboarding/invite': typeof OnboardingInviteRoute
+  '/onboarding/profile': typeof OnboardingProfileRoute
+  '/onboarding/start': typeof OnboardingStartRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
+  '/onboarding': typeof OnboardingRouteWithChildren
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/onboarding/connect': typeof OnboardingConnectRoute
+  '/onboarding/invite': typeof OnboardingInviteRoute
+  '/onboarding/profile': typeof OnboardingProfileRoute
+  '/onboarding/start': typeof OnboardingStartRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/onboarding'
+    | '/sitemap.xml'
+    | '/onboarding/connect'
+    | '/onboarding/invite'
+    | '/onboarding/profile'
+    | '/onboarding/start'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/onboarding'
+    | '/sitemap.xml'
+    | '/onboarding/connect'
+    | '/onboarding/invite'
+    | '/onboarding/profile'
+    | '/onboarding/start'
+  id:
+    | '__root__'
+    | '/'
+    | '/dashboard'
+    | '/onboarding'
+    | '/sitemap.xml'
+    | '/onboarding/connect'
+    | '/onboarding/invite'
+    | '/onboarding/profile'
+    | '/onboarding/start'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DashboardRoute: typeof DashboardRoute
+  OnboardingRoute: typeof OnboardingRouteWithChildren
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +160,61 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/onboarding/start': {
+      id: '/onboarding/start'
+      path: '/start'
+      fullPath: '/onboarding/start'
+      preLoaderRoute: typeof OnboardingStartRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/profile': {
+      id: '/onboarding/profile'
+      path: '/profile'
+      fullPath: '/onboarding/profile'
+      preLoaderRoute: typeof OnboardingProfileRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/invite': {
+      id: '/onboarding/invite'
+      path: '/invite'
+      fullPath: '/onboarding/invite'
+      preLoaderRoute: typeof OnboardingInviteRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/connect': {
+      id: '/onboarding/connect'
+      path: '/connect'
+      fullPath: '/onboarding/connect'
+      preLoaderRoute: typeof OnboardingConnectRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
   }
 }
 
+interface OnboardingRouteChildren {
+  OnboardingConnectRoute: typeof OnboardingConnectRoute
+  OnboardingInviteRoute: typeof OnboardingInviteRoute
+  OnboardingProfileRoute: typeof OnboardingProfileRoute
+  OnboardingStartRoute: typeof OnboardingStartRoute
+}
+
+const OnboardingRouteChildren: OnboardingRouteChildren = {
+  OnboardingConnectRoute: OnboardingConnectRoute,
+  OnboardingInviteRoute: OnboardingInviteRoute,
+  OnboardingProfileRoute: OnboardingProfileRoute,
+  OnboardingStartRoute: OnboardingStartRoute,
+}
+
+const OnboardingRouteWithChildren = OnboardingRoute._addFileChildren(
+  OnboardingRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DashboardRoute: DashboardRoute,
+  OnboardingRoute: OnboardingRouteWithChildren,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
