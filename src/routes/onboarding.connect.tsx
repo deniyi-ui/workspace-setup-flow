@@ -1,8 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  btnGhost,
   btnPrimary,
+  btnSecondary,
   loadOnboarding,
   platforms,
   saveOnboarding,
