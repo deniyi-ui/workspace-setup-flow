@@ -148,11 +148,3 @@ function ConnectStep() {
     </div>
   );
 }
-          >
-            Skip the rest
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
