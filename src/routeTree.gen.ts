@@ -9,38 +9,78 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as OnboardingProfileRouteImport } from './routes/onboarding.profile'
+import { Route as OnboardingConnectRouteImport } from './routes/onboarding.connect'
 
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OnboardingProfileRoute = OnboardingProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingConnectRoute = OnboardingConnectRouteImport.update({
+  id: '/connect',
+  path: '/connect',
+  getParentRoute: () => OnboardingRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/onboarding': typeof OnboardingRouteWithChildren
+  '/onboarding/connect': typeof OnboardingConnectRoute
+  '/onboarding/profile': typeof OnboardingProfileRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/onboarding': typeof OnboardingRouteWithChildren
+  '/onboarding/connect': typeof OnboardingConnectRoute
+  '/onboarding/profile': typeof OnboardingProfileRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/onboarding': typeof OnboardingRouteWithChildren
+  '/onboarding/connect': typeof OnboardingConnectRoute
+  '/onboarding/profile': typeof OnboardingProfileRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/onboarding' | '/onboarding/connect' | '/onboarding/profile'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/onboarding' | '/onboarding/connect' | '/onboarding/profile'
+  id:
+    | '__root__'
+    | '/'
+    | '/onboarding'
+    | '/onboarding/connect'
+    | '/onboarding/profile'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  OnboardingRoute: typeof OnboardingRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +88,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/onboarding/profile': {
+      id: '/onboarding/profile'
+      path: '/profile'
+      fullPath: '/onboarding/profile'
+      preLoaderRoute: typeof OnboardingProfileRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/connect': {
+      id: '/onboarding/connect'
+      path: '/connect'
+      fullPath: '/onboarding/connect'
+      preLoaderRoute: typeof OnboardingConnectRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
   }
 }
 
+interface OnboardingRouteChildren {
+  OnboardingConnectRoute: typeof OnboardingConnectRoute
+  OnboardingProfileRoute: typeof OnboardingProfileRoute
+}
+
+const OnboardingRouteChildren: OnboardingRouteChildren = {
+  OnboardingConnectRoute: OnboardingConnectRoute,
+  OnboardingProfileRoute: OnboardingProfileRoute,
+}
+
+const OnboardingRouteWithChildren = OnboardingRoute._addFileChildren(
+  OnboardingRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  OnboardingRoute: OnboardingRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
