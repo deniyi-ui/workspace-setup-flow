@@ -11,7 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as OnboardingStartRouteImport } from './routes/onboarding.start'
 import { Route as OnboardingProfileRouteImport } from './routes/onboarding.profile'
+import { Route as OnboardingInviteRouteImport } from './routes/onboarding.invite'
 import { Route as OnboardingConnectRouteImport } from './routes/onboarding.connect'
 
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -24,9 +26,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OnboardingStartRoute = OnboardingStartRouteImport.update({
+  id: '/start',
+  path: '/start',
+  getParentRoute: () => OnboardingRoute,
+} as any)
 const OnboardingProfileRoute = OnboardingProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingInviteRoute = OnboardingInviteRouteImport.update({
+  id: '/invite',
+  path: '/invite',
   getParentRoute: () => OnboardingRoute,
 } as any)
 const OnboardingConnectRoute = OnboardingConnectRouteImport.update({
@@ -39,32 +51,52 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/onboarding/connect': typeof OnboardingConnectRoute
+  '/onboarding/invite': typeof OnboardingInviteRoute
   '/onboarding/profile': typeof OnboardingProfileRoute
+  '/onboarding/start': typeof OnboardingStartRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/onboarding/connect': typeof OnboardingConnectRoute
+  '/onboarding/invite': typeof OnboardingInviteRoute
   '/onboarding/profile': typeof OnboardingProfileRoute
+  '/onboarding/start': typeof OnboardingStartRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/onboarding/connect': typeof OnboardingConnectRoute
+  '/onboarding/invite': typeof OnboardingInviteRoute
   '/onboarding/profile': typeof OnboardingProfileRoute
+  '/onboarding/start': typeof OnboardingStartRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/onboarding' | '/onboarding/connect' | '/onboarding/profile'
+  fullPaths:
+    | '/'
+    | '/onboarding'
+    | '/onboarding/connect'
+    | '/onboarding/invite'
+    | '/onboarding/profile'
+    | '/onboarding/start'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/onboarding' | '/onboarding/connect' | '/onboarding/profile'
+  to:
+    | '/'
+    | '/onboarding'
+    | '/onboarding/connect'
+    | '/onboarding/invite'
+    | '/onboarding/profile'
+    | '/onboarding/start'
   id:
     | '__root__'
     | '/'
     | '/onboarding'
     | '/onboarding/connect'
+    | '/onboarding/invite'
     | '/onboarding/profile'
+    | '/onboarding/start'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -88,11 +120,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/onboarding/start': {
+      id: '/onboarding/start'
+      path: '/start'
+      fullPath: '/onboarding/start'
+      preLoaderRoute: typeof OnboardingStartRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
     '/onboarding/profile': {
       id: '/onboarding/profile'
       path: '/profile'
       fullPath: '/onboarding/profile'
       preLoaderRoute: typeof OnboardingProfileRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/invite': {
+      id: '/onboarding/invite'
+      path: '/invite'
+      fullPath: '/onboarding/invite'
+      preLoaderRoute: typeof OnboardingInviteRouteImport
       parentRoute: typeof OnboardingRoute
     }
     '/onboarding/connect': {
@@ -107,12 +153,16 @@ declare module '@tanstack/react-router' {
 
 interface OnboardingRouteChildren {
   OnboardingConnectRoute: typeof OnboardingConnectRoute
+  OnboardingInviteRoute: typeof OnboardingInviteRoute
   OnboardingProfileRoute: typeof OnboardingProfileRoute
+  OnboardingStartRoute: typeof OnboardingStartRoute
 }
 
 const OnboardingRouteChildren: OnboardingRouteChildren = {
   OnboardingConnectRoute: OnboardingConnectRoute,
+  OnboardingInviteRoute: OnboardingInviteRoute,
   OnboardingProfileRoute: OnboardingProfileRoute,
+  OnboardingStartRoute: OnboardingStartRoute,
 }
 
 const OnboardingRouteWithChildren = OnboardingRoute._addFileChildren(
