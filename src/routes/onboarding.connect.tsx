@@ -123,7 +123,7 @@ function ConnectStep() {
         })}
       </div>
 
-      <div className="mt-10 flex items-center gap-3">
+      <div className="mt-10 flex items-center gap-4">
         {connected ? (
           <button
             className={btnPrimary}
@@ -132,22 +132,22 @@ function ConnectStep() {
             Continue
           </button>
         ) : (
-          <button
-            className={btnPrimary}
-            onClick={() => navigate({ to: "/onboarding/invite" })}
-          >
-            Skip for now
-          </button>
+          <>
+            <button
+              className={btnSecondary}
+              onClick={() => navigate({ to: "/onboarding/invite" })}
+            >
+              Skip for now
+            </button>
+            <p className="text-xs text-muted-foreground">
+              You can connect a platform anytime from settings.
+            </p>
+          </>
         )}
-        {!connected && (
-          <p className="text-xs text-muted-foreground">
-            You can connect a platform anytime from settings.
-          </p>
-        )}
-        {connected && (
-          <button
-            className={btnGhost}
-            onClick={() => navigate({ to: "/onboarding/invite" })}
+      </div>
+    </div>
+  );
+}
           >
             Skip the rest
           </button>
