@@ -1,10 +1,18 @@
 export type PlatformId = "surveycto" | "kobo" | "odk";
 
 export interface OnboardingData {
+  // Organization profile
   orgName: string;
   orgType: string;
+  industry: string;
+  country: string;
+  city: string;
+  // Primary contact
+  contactName: string;
   role: string;
   email: string;
+  contactPhone: string;
+  // Rest
   connectedPlatform: PlatformId | null;
   invitesSent: number;
   bannerDismissed: boolean;
@@ -13,8 +21,13 @@ export interface OnboardingData {
 export const onboardingDefaults: OnboardingData = {
   orgName: "",
   orgType: "",
+  industry: "",
+  country: "",
+  city: "",
+  contactName: "",
   role: "",
   email: "",
+  contactPhone: "",
   connectedPlatform: null,
   invitesSent: 0,
   bannerDismissed: false,
