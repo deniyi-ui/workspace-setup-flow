@@ -19,6 +19,7 @@ import { Route as OnboardingProfileRouteImport } from './routes/onboarding.profi
 import { Route as OnboardingInviteRouteImport } from './routes/onboarding.invite'
 import { Route as OnboardingConnectRouteImport } from './routes/onboarding.connect'
 import { Route as DashboardProjectsIndexRouteImport } from './routes/dashboard.projects.index'
+import { Route as DashboardCollectorsIndexRouteImport } from './routes/dashboard.collectors.index'
 import { Route as DashboardProjectsIdRouteImport } from './routes/dashboard.projects.$id'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -71,6 +72,12 @@ const DashboardProjectsIndexRoute = DashboardProjectsIndexRouteImport.update({
   path: '/projects/',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardCollectorsIndexRoute =
+  DashboardCollectorsIndexRouteImport.update({
+    id: '/collectors/',
+    path: '/collectors/',
+    getParentRoute: () => DashboardRoute,
+  } as any)
 const DashboardProjectsIdRoute = DashboardProjectsIdRouteImport.update({
   id: '/projects/$id',
   path: '/projects/$id',
@@ -88,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/onboarding/start': typeof OnboardingStartRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/projects/$id': typeof DashboardProjectsIdRoute
+  '/dashboard/collectors/': typeof DashboardCollectorsIndexRoute
   '/dashboard/projects/': typeof DashboardProjectsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -100,6 +108,7 @@ export interface FileRoutesByTo {
   '/onboarding/start': typeof OnboardingStartRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/projects/$id': typeof DashboardProjectsIdRoute
+  '/dashboard/collectors': typeof DashboardCollectorsIndexRoute
   '/dashboard/projects': typeof DashboardProjectsIndexRoute
 }
 export interface FileRoutesById {
@@ -114,6 +123,7 @@ export interface FileRoutesById {
   '/onboarding/start': typeof OnboardingStartRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/projects/$id': typeof DashboardProjectsIdRoute
+  '/dashboard/collectors/': typeof DashboardCollectorsIndexRoute
   '/dashboard/projects/': typeof DashboardProjectsIndexRoute
 }
 export interface FileRouteTypes {
@@ -129,6 +139,7 @@ export interface FileRouteTypes {
     | '/onboarding/start'
     | '/dashboard/'
     | '/dashboard/projects/$id'
+    | '/dashboard/collectors/'
     | '/dashboard/projects/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -141,6 +152,7 @@ export interface FileRouteTypes {
     | '/onboarding/start'
     | '/dashboard'
     | '/dashboard/projects/$id'
+    | '/dashboard/collectors'
     | '/dashboard/projects'
   id:
     | '__root__'
@@ -154,6 +166,7 @@ export interface FileRouteTypes {
     | '/onboarding/start'
     | '/dashboard/'
     | '/dashboard/projects/$id'
+    | '/dashboard/collectors/'
     | '/dashboard/projects/'
   fileRoutesById: FileRoutesById
 }
@@ -236,6 +249,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardProjectsIndexRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/collectors/': {
+      id: '/dashboard/collectors/'
+      path: '/collectors'
+      fullPath: '/dashboard/collectors/'
+      preLoaderRoute: typeof DashboardCollectorsIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/projects/$id': {
       id: '/dashboard/projects/$id'
       path: '/projects/$id'
@@ -249,12 +269,14 @@ declare module '@tanstack/react-router' {
 interface DashboardRouteChildren {
   DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardProjectsIdRoute: typeof DashboardProjectsIdRoute
+  DashboardCollectorsIndexRoute: typeof DashboardCollectorsIndexRoute
   DashboardProjectsIndexRoute: typeof DashboardProjectsIndexRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardProjectsIdRoute: DashboardProjectsIdRoute,
+  DashboardCollectorsIndexRoute: DashboardCollectorsIndexRoute,
   DashboardProjectsIndexRoute: DashboardProjectsIndexRoute,
 }
 
