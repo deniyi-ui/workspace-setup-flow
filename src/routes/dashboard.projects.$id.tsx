@@ -31,7 +31,7 @@ export const Route = createFileRoute("/dashboard/projects/$id")({
   head: ({ params }) => ({
     meta: [{ title: `Project — FieldWorkz OS` }, { name: "description", content: `Project ${params.id} details` }],
   }),
-  loader: ({ params }) => {
+  loader: ({ params }): { project: Project } => {
     const project = getProject(params.id);
     if (!project) throw notFound();
     return { project };
