@@ -8,6 +8,7 @@ import {
   languageOptions,
   religionOptions,
   type Collector,
+  type Project,
   type Submission,
   type TrainingModule,
 } from "../lib/mock-data";
