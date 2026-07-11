@@ -108,7 +108,7 @@ function Overview({
   project,
   flaggedCount,
 }: {
-  project: ReturnType<typeof getProject> & object;
+  project: Project;
   flaggedCount: number;
 }) {
   if (project.status === "draft") {
@@ -144,7 +144,7 @@ function Overview({
 }
 
 /* ---------------- Collectors ---------------- */
-function CollectorsTab({ project }: { project: ReturnType<typeof getProject> & object }) {
+function CollectorsTab({ project }: { project: Project }) {
   const [search, setSearch] = useState("");
   const [values, setValues] = useState<Record<string, string[]>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -240,7 +240,7 @@ function CollectorsTab({ project }: { project: ReturnType<typeof getProject> & o
 
 /* ---------------- Submissions ---------------- */
 type SubTab = "pending" | "flagged" | "approved";
-function SubmissionsTab({ project }: { project: ReturnType<typeof getProject> & object }) {
+function SubmissionsTab({ project }: { project: Project }) {
   const [status, setStatus] = useState<SubTab>("pending");
   const [detail, setDetail] = useState<Submission | null>(null);
 
@@ -401,7 +401,7 @@ function SubmissionsTab({ project }: { project: ReturnType<typeof getProject> & 
 }
 
 /* ---------------- Analytics ---------------- */
-function AnalyticsTab({ project }: { project: ReturnType<typeof getProject> & object }) {
+function AnalyticsTab({ project }: { project: Project }) {
   if (project.submissions.length === 0) {
     return (
       <EmptyState
@@ -508,7 +508,7 @@ function AnalyticsTab({ project }: { project: ReturnType<typeof getProject> & ob
 }
 
 /* ---------------- Training ---------------- */
-function TrainingTab({ project }: { project: ReturnType<typeof getProject> & object }) {
+function TrainingTab({ project }: { project: Project }) {
   if (project.training.length === 0) {
     return (
       <EmptyState
@@ -543,7 +543,7 @@ function TrainingTab({ project }: { project: ReturnType<typeof getProject> & obj
 }
 
 /* ---------------- Messaging (project-scoped) ---------------- */
-function MessagingTab({ project }: { project: ReturnType<typeof getProject> & object }) {
+function MessagingTab({ project }: { project: Project }) {
   return (
     <ComposeAndLog
       audienceLabel={`Assigned collectors on ${project.name}`}
