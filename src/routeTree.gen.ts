@@ -13,10 +13,22 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as OnboardingStartRouteImport } from './routes/onboarding.start'
 import { Route as OnboardingProfileRouteImport } from './routes/onboarding.profile'
 import { Route as OnboardingInviteRouteImport } from './routes/onboarding.invite'
 import { Route as OnboardingConnectRouteImport } from './routes/onboarding.connect'
+import { Route as DashboardReportsRouteImport } from './routes/dashboard.reports'
+import { Route as DashboardProjectsRouteImport } from './routes/dashboard.projects'
+import { Route as DashboardMessagingRouteImport } from './routes/dashboard.messaging'
+import { Route as DashboardIntegrationsRouteImport } from './routes/dashboard.integrations'
+import { Route as DashboardCollectorsRouteImport } from './routes/dashboard.collectors'
+import { Route as DashboardAdministrationRouteImport } from './routes/dashboard.administration'
+import { Route as DashboardProjectsIndexRouteImport } from './routes/dashboard.projects.index'
+import { Route as DashboardCollectorsIndexRouteImport } from './routes/dashboard.collectors.index'
+import { Route as DashboardProjectsIdRouteImport } from './routes/dashboard.projects.$id'
+import { Route as DashboardCollectorsUploadRouteImport } from './routes/dashboard.collectors.upload'
+import { Route as DashboardCollectorsIdRouteImport } from './routes/dashboard.collectors.$id'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -38,6 +50,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const OnboardingStartRoute = OnboardingStartRouteImport.update({
   id: '/start',
   path: '/start',
@@ -58,37 +75,127 @@ const OnboardingConnectRoute = OnboardingConnectRouteImport.update({
   path: '/connect',
   getParentRoute: () => OnboardingRoute,
 } as any)
+const DashboardReportsRoute = DashboardReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardProjectsRoute = DashboardProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardMessagingRoute = DashboardMessagingRouteImport.update({
+  id: '/messaging',
+  path: '/messaging',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardIntegrationsRoute = DashboardIntegrationsRouteImport.update({
+  id: '/integrations',
+  path: '/integrations',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardCollectorsRoute = DashboardCollectorsRouteImport.update({
+  id: '/collectors',
+  path: '/collectors',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardAdministrationRoute = DashboardAdministrationRouteImport.update({
+  id: '/administration',
+  path: '/administration',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardProjectsIndexRoute = DashboardProjectsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardProjectsRoute,
+} as any)
+const DashboardCollectorsIndexRoute =
+  DashboardCollectorsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => DashboardCollectorsRoute,
+  } as any)
+const DashboardProjectsIdRoute = DashboardProjectsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => DashboardProjectsRoute,
+} as any)
+const DashboardCollectorsUploadRoute =
+  DashboardCollectorsUploadRouteImport.update({
+    id: '/upload',
+    path: '/upload',
+    getParentRoute: () => DashboardCollectorsRoute,
+  } as any)
+const DashboardCollectorsIdRoute = DashboardCollectorsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => DashboardCollectorsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
+  '/dashboard': typeof DashboardRouteWithChildren
   '/onboarding': typeof OnboardingRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/dashboard/administration': typeof DashboardAdministrationRoute
+  '/dashboard/collectors': typeof DashboardCollectorsRouteWithChildren
+  '/dashboard/integrations': typeof DashboardIntegrationsRoute
+  '/dashboard/messaging': typeof DashboardMessagingRoute
+  '/dashboard/projects': typeof DashboardProjectsRouteWithChildren
+  '/dashboard/reports': typeof DashboardReportsRoute
   '/onboarding/connect': typeof OnboardingConnectRoute
   '/onboarding/invite': typeof OnboardingInviteRoute
   '/onboarding/profile': typeof OnboardingProfileRoute
   '/onboarding/start': typeof OnboardingStartRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/collectors/$id': typeof DashboardCollectorsIdRoute
+  '/dashboard/collectors/upload': typeof DashboardCollectorsUploadRoute
+  '/dashboard/projects/$id': typeof DashboardProjectsIdRoute
+  '/dashboard/collectors/': typeof DashboardCollectorsIndexRoute
+  '/dashboard/projects/': typeof DashboardProjectsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/dashboard/administration': typeof DashboardAdministrationRoute
+  '/dashboard/integrations': typeof DashboardIntegrationsRoute
+  '/dashboard/messaging': typeof DashboardMessagingRoute
+  '/dashboard/reports': typeof DashboardReportsRoute
   '/onboarding/connect': typeof OnboardingConnectRoute
   '/onboarding/invite': typeof OnboardingInviteRoute
   '/onboarding/profile': typeof OnboardingProfileRoute
   '/onboarding/start': typeof OnboardingStartRoute
+  '/dashboard': typeof DashboardIndexRoute
+  '/dashboard/collectors/$id': typeof DashboardCollectorsIdRoute
+  '/dashboard/collectors/upload': typeof DashboardCollectorsUploadRoute
+  '/dashboard/projects/$id': typeof DashboardProjectsIdRoute
+  '/dashboard/collectors': typeof DashboardCollectorsIndexRoute
+  '/dashboard/projects': typeof DashboardProjectsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
+  '/dashboard': typeof DashboardRouteWithChildren
   '/onboarding': typeof OnboardingRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/dashboard/administration': typeof DashboardAdministrationRoute
+  '/dashboard/collectors': typeof DashboardCollectorsRouteWithChildren
+  '/dashboard/integrations': typeof DashboardIntegrationsRoute
+  '/dashboard/messaging': typeof DashboardMessagingRoute
+  '/dashboard/projects': typeof DashboardProjectsRouteWithChildren
+  '/dashboard/reports': typeof DashboardReportsRoute
   '/onboarding/connect': typeof OnboardingConnectRoute
   '/onboarding/invite': typeof OnboardingInviteRoute
   '/onboarding/profile': typeof OnboardingProfileRoute
   '/onboarding/start': typeof OnboardingStartRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/collectors/$id': typeof DashboardCollectorsIdRoute
+  '/dashboard/collectors/upload': typeof DashboardCollectorsUploadRoute
+  '/dashboard/projects/$id': typeof DashboardProjectsIdRoute
+  '/dashboard/collectors/': typeof DashboardCollectorsIndexRoute
+  '/dashboard/projects/': typeof DashboardProjectsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -97,35 +204,68 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/onboarding'
     | '/sitemap.xml'
+    | '/dashboard/administration'
+    | '/dashboard/collectors'
+    | '/dashboard/integrations'
+    | '/dashboard/messaging'
+    | '/dashboard/projects'
+    | '/dashboard/reports'
     | '/onboarding/connect'
     | '/onboarding/invite'
     | '/onboarding/profile'
     | '/onboarding/start'
+    | '/dashboard/'
+    | '/dashboard/collectors/$id'
+    | '/dashboard/collectors/upload'
+    | '/dashboard/projects/$id'
+    | '/dashboard/collectors/'
+    | '/dashboard/projects/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/dashboard'
     | '/onboarding'
     | '/sitemap.xml'
+    | '/dashboard/administration'
+    | '/dashboard/integrations'
+    | '/dashboard/messaging'
+    | '/dashboard/reports'
     | '/onboarding/connect'
     | '/onboarding/invite'
     | '/onboarding/profile'
     | '/onboarding/start'
+    | '/dashboard'
+    | '/dashboard/collectors/$id'
+    | '/dashboard/collectors/upload'
+    | '/dashboard/projects/$id'
+    | '/dashboard/collectors'
+    | '/dashboard/projects'
   id:
     | '__root__'
     | '/'
     | '/dashboard'
     | '/onboarding'
     | '/sitemap.xml'
+    | '/dashboard/administration'
+    | '/dashboard/collectors'
+    | '/dashboard/integrations'
+    | '/dashboard/messaging'
+    | '/dashboard/projects'
+    | '/dashboard/reports'
     | '/onboarding/connect'
     | '/onboarding/invite'
     | '/onboarding/profile'
     | '/onboarding/start'
+    | '/dashboard/'
+    | '/dashboard/collectors/$id'
+    | '/dashboard/collectors/upload'
+    | '/dashboard/projects/$id'
+    | '/dashboard/collectors/'
+    | '/dashboard/projects/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  DashboardRoute: typeof DashboardRoute
+  DashboardRoute: typeof DashboardRouteWithChildren
   OnboardingRoute: typeof OnboardingRouteWithChildren
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
 }
@@ -160,6 +300,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/onboarding/start': {
       id: '/onboarding/start'
       path: '/start'
@@ -188,8 +335,137 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingConnectRouteImport
       parentRoute: typeof OnboardingRoute
     }
+    '/dashboard/reports': {
+      id: '/dashboard/reports'
+      path: '/reports'
+      fullPath: '/dashboard/reports'
+      preLoaderRoute: typeof DashboardReportsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/projects': {
+      id: '/dashboard/projects'
+      path: '/projects'
+      fullPath: '/dashboard/projects'
+      preLoaderRoute: typeof DashboardProjectsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/messaging': {
+      id: '/dashboard/messaging'
+      path: '/messaging'
+      fullPath: '/dashboard/messaging'
+      preLoaderRoute: typeof DashboardMessagingRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/integrations': {
+      id: '/dashboard/integrations'
+      path: '/integrations'
+      fullPath: '/dashboard/integrations'
+      preLoaderRoute: typeof DashboardIntegrationsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/collectors': {
+      id: '/dashboard/collectors'
+      path: '/collectors'
+      fullPath: '/dashboard/collectors'
+      preLoaderRoute: typeof DashboardCollectorsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/administration': {
+      id: '/dashboard/administration'
+      path: '/administration'
+      fullPath: '/dashboard/administration'
+      preLoaderRoute: typeof DashboardAdministrationRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/projects/': {
+      id: '/dashboard/projects/'
+      path: '/'
+      fullPath: '/dashboard/projects/'
+      preLoaderRoute: typeof DashboardProjectsIndexRouteImport
+      parentRoute: typeof DashboardProjectsRoute
+    }
+    '/dashboard/collectors/': {
+      id: '/dashboard/collectors/'
+      path: '/'
+      fullPath: '/dashboard/collectors/'
+      preLoaderRoute: typeof DashboardCollectorsIndexRouteImport
+      parentRoute: typeof DashboardCollectorsRoute
+    }
+    '/dashboard/projects/$id': {
+      id: '/dashboard/projects/$id'
+      path: '/$id'
+      fullPath: '/dashboard/projects/$id'
+      preLoaderRoute: typeof DashboardProjectsIdRouteImport
+      parentRoute: typeof DashboardProjectsRoute
+    }
+    '/dashboard/collectors/upload': {
+      id: '/dashboard/collectors/upload'
+      path: '/upload'
+      fullPath: '/dashboard/collectors/upload'
+      preLoaderRoute: typeof DashboardCollectorsUploadRouteImport
+      parentRoute: typeof DashboardCollectorsRoute
+    }
+    '/dashboard/collectors/$id': {
+      id: '/dashboard/collectors/$id'
+      path: '/$id'
+      fullPath: '/dashboard/collectors/$id'
+      preLoaderRoute: typeof DashboardCollectorsIdRouteImport
+      parentRoute: typeof DashboardCollectorsRoute
+    }
   }
 }
+
+interface DashboardCollectorsRouteChildren {
+  DashboardCollectorsIdRoute: typeof DashboardCollectorsIdRoute
+  DashboardCollectorsUploadRoute: typeof DashboardCollectorsUploadRoute
+  DashboardCollectorsIndexRoute: typeof DashboardCollectorsIndexRoute
+}
+
+const DashboardCollectorsRouteChildren: DashboardCollectorsRouteChildren = {
+  DashboardCollectorsIdRoute: DashboardCollectorsIdRoute,
+  DashboardCollectorsUploadRoute: DashboardCollectorsUploadRoute,
+  DashboardCollectorsIndexRoute: DashboardCollectorsIndexRoute,
+}
+
+const DashboardCollectorsRouteWithChildren =
+  DashboardCollectorsRoute._addFileChildren(DashboardCollectorsRouteChildren)
+
+interface DashboardProjectsRouteChildren {
+  DashboardProjectsIdRoute: typeof DashboardProjectsIdRoute
+  DashboardProjectsIndexRoute: typeof DashboardProjectsIndexRoute
+}
+
+const DashboardProjectsRouteChildren: DashboardProjectsRouteChildren = {
+  DashboardProjectsIdRoute: DashboardProjectsIdRoute,
+  DashboardProjectsIndexRoute: DashboardProjectsIndexRoute,
+}
+
+const DashboardProjectsRouteWithChildren =
+  DashboardProjectsRoute._addFileChildren(DashboardProjectsRouteChildren)
+
+interface DashboardRouteChildren {
+  DashboardAdministrationRoute: typeof DashboardAdministrationRoute
+  DashboardCollectorsRoute: typeof DashboardCollectorsRouteWithChildren
+  DashboardIntegrationsRoute: typeof DashboardIntegrationsRoute
+  DashboardMessagingRoute: typeof DashboardMessagingRoute
+  DashboardProjectsRoute: typeof DashboardProjectsRouteWithChildren
+  DashboardReportsRoute: typeof DashboardReportsRoute
+  DashboardIndexRoute: typeof DashboardIndexRoute
+}
+
+const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardAdministrationRoute: DashboardAdministrationRoute,
+  DashboardCollectorsRoute: DashboardCollectorsRouteWithChildren,
+  DashboardIntegrationsRoute: DashboardIntegrationsRoute,
+  DashboardMessagingRoute: DashboardMessagingRoute,
+  DashboardProjectsRoute: DashboardProjectsRouteWithChildren,
+  DashboardReportsRoute: DashboardReportsRoute,
+  DashboardIndexRoute: DashboardIndexRoute,
+}
+
+const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
+  DashboardRouteChildren,
+)
 
 interface OnboardingRouteChildren {
   OnboardingConnectRoute: typeof OnboardingConnectRoute
@@ -211,7 +487,7 @@ const OnboardingRouteWithChildren = OnboardingRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  DashboardRoute: DashboardRoute,
+  DashboardRoute: DashboardRouteWithChildren,
   OnboardingRoute: OnboardingRouteWithChildren,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
 }
