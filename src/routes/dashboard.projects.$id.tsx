@@ -54,7 +54,7 @@ function ProjectNotFound() {
 type TabId = "overview" | "collectors" | "submissions" | "analytics" | "training" | "messaging";
 
 function ProjectDetail() {
-  const { project } = Route.useLoaderData();
+  const { project } = Route.useLoaderData() as { project: Project };
   const [tab, setTab] = useState<TabId>("overview");
 
   const flaggedCount = project.submissions.filter((s) => s.status === "flagged").length;
