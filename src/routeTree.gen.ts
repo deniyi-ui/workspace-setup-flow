@@ -21,6 +21,7 @@ import { Route as OnboardingConnectRouteImport } from './routes/onboarding.conne
 import { Route as DashboardProjectsIndexRouteImport } from './routes/dashboard.projects.index'
 import { Route as DashboardCollectorsIndexRouteImport } from './routes/dashboard.collectors.index'
 import { Route as DashboardProjectsIdRouteImport } from './routes/dashboard.projects.$id'
+import { Route as DashboardCollectorsIdRouteImport } from './routes/dashboard.collectors.$id'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -83,6 +84,11 @@ const DashboardProjectsIdRoute = DashboardProjectsIdRouteImport.update({
   path: '/projects/$id',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardCollectorsIdRoute = DashboardCollectorsIdRouteImport.update({
+  id: '/collectors/$id',
+  path: '/collectors/$id',
+  getParentRoute: () => DashboardRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/onboarding/profile': typeof OnboardingProfileRoute
   '/onboarding/start': typeof OnboardingStartRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/collectors/$id': typeof DashboardCollectorsIdRoute
   '/dashboard/projects/$id': typeof DashboardProjectsIdRoute
   '/dashboard/collectors/': typeof DashboardCollectorsIndexRoute
   '/dashboard/projects/': typeof DashboardProjectsIndexRoute
@@ -107,6 +114,7 @@ export interface FileRoutesByTo {
   '/onboarding/profile': typeof OnboardingProfileRoute
   '/onboarding/start': typeof OnboardingStartRoute
   '/dashboard': typeof DashboardIndexRoute
+  '/dashboard/collectors/$id': typeof DashboardCollectorsIdRoute
   '/dashboard/projects/$id': typeof DashboardProjectsIdRoute
   '/dashboard/collectors': typeof DashboardCollectorsIndexRoute
   '/dashboard/projects': typeof DashboardProjectsIndexRoute
@@ -122,6 +130,7 @@ export interface FileRoutesById {
   '/onboarding/profile': typeof OnboardingProfileRoute
   '/onboarding/start': typeof OnboardingStartRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/collectors/$id': typeof DashboardCollectorsIdRoute
   '/dashboard/projects/$id': typeof DashboardProjectsIdRoute
   '/dashboard/collectors/': typeof DashboardCollectorsIndexRoute
   '/dashboard/projects/': typeof DashboardProjectsIndexRoute
@@ -138,6 +147,7 @@ export interface FileRouteTypes {
     | '/onboarding/profile'
     | '/onboarding/start'
     | '/dashboard/'
+    | '/dashboard/collectors/$id'
     | '/dashboard/projects/$id'
     | '/dashboard/collectors/'
     | '/dashboard/projects/'
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
     | '/onboarding/profile'
     | '/onboarding/start'
     | '/dashboard'
+    | '/dashboard/collectors/$id'
     | '/dashboard/projects/$id'
     | '/dashboard/collectors'
     | '/dashboard/projects'
@@ -165,6 +176,7 @@ export interface FileRouteTypes {
     | '/onboarding/profile'
     | '/onboarding/start'
     | '/dashboard/'
+    | '/dashboard/collectors/$id'
     | '/dashboard/projects/$id'
     | '/dashboard/collectors/'
     | '/dashboard/projects/'
@@ -263,11 +275,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardProjectsIdRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/collectors/$id': {
+      id: '/dashboard/collectors/$id'
+      path: '/collectors/$id'
+      fullPath: '/dashboard/collectors/$id'
+      preLoaderRoute: typeof DashboardCollectorsIdRouteImport
+      parentRoute: typeof DashboardRoute
+    }
   }
 }
 
 interface DashboardRouteChildren {
   DashboardIndexRoute: typeof DashboardIndexRoute
+  DashboardCollectorsIdRoute: typeof DashboardCollectorsIdRoute
   DashboardProjectsIdRoute: typeof DashboardProjectsIdRoute
   DashboardCollectorsIndexRoute: typeof DashboardCollectorsIndexRoute
   DashboardProjectsIndexRoute: typeof DashboardProjectsIndexRoute
@@ -275,6 +295,7 @@ interface DashboardRouteChildren {
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardIndexRoute: DashboardIndexRoute,
+  DashboardCollectorsIdRoute: DashboardCollectorsIdRoute,
   DashboardProjectsIdRoute: DashboardProjectsIdRoute,
   DashboardCollectorsIndexRoute: DashboardCollectorsIndexRoute,
   DashboardProjectsIndexRoute: DashboardProjectsIndexRoute,
