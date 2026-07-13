@@ -43,13 +43,43 @@ export interface Submission {
   audit: { at: string; who: string; action: string }[];
 }
 
+export type MaterialType = "PDF" | "Video" | "Slide deck";
+
+export interface TrainingMaterial {
+  id: string;
+  filename: string;
+  type: MaterialType;
+  uploadedOn: string;
+}
+
+export interface AssessmentQuestion {
+  id: string;
+  text: string;
+  options: { id: string; text: string }[];
+  correctOptionId: string;
+}
+
+export type MaterialsStatus = "not started" | "viewed";
+export type AssessmentStatus = "not attempted" | "in progress" | "passed" | "failed";
+
+export interface TrainingProgress {
+  collectorId: string;
+  materialsStatus: MaterialsStatus;
+  assessmentStatus: AssessmentStatus;
+  score: number | null;
+  attemptsUsed: number;
+  lastAttemptAt: string | null;
+}
+
 export interface TrainingModule {
   id: string;
   title: string;
-  format: "PDF" | "Video" | "Slide deck";
   addedOn: string;
-  completions: number;
-  assigned: number;
+  passingScore: number;
+  maxAttempts: number;
+  materials: TrainingMaterial[];
+  questions: AssessmentQuestion[];
+  progress: TrainingProgress[];
 }
 
 export interface ProjectMessage {
