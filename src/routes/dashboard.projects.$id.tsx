@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   collectors as allCollectors,
   getProject,
@@ -239,34 +239,84 @@ function CollectorsTab({ project }: { project: Project }) {
 }
 
 /* ---------------- Submissions ---------------- */
-type SubTab = "pending" | "flagged" | "approved";
+type SubTab = "all" | "pending" | "flagged" | "approved" | "rejected";
+
+function flagSignal(s: Submission): { label: string; detail: string } | null {
+  if (s.status !== "flagged") return null;
+  const reason = (s.flagReason ?? "").toLowerCase();
+  if (reason.includes("duration") || reason.includes("short") || reason.includes("straight"))
+    return { label: "Speed", detail: s.flagReason ?? "" };
+  if (reason.includes("gps") || reason.includes("region") || reason.includes("duplicate"))
+    return { label: "GPS", detail: s.flagReason ?? "" };
+  return { label: "Quality", detail: s.flagReason ?? "" };
+}
+
+function WarningIcon() {
+  return (
+    <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M8 1.5l7 12H1l7-12z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+      <path d="M8 6v3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <circle cx="8" cy="11.5" r="0.75" fill="currentColor" />
+    </svg>
+  );
+}
+
 function SubmissionsTab({ project }: { project: Project }) {
-  const [status, setStatus] = useState<SubTab>("pending");
+  const [status, setStatus] = useState<SubTab>("all");
   const [detail, setDetail] = useState<Submission | null>(null);
+  const [selectedQ, setSelectedQ] = useState(0);
+  const [auditOpen, setAuditOpen] = useState(true);
 
   const counts = {
+    all: project.submissions.length,
     pending: project.submissions.filter((s) => s.status === "pending").length,
     flagged: project.submissions.filter((s) => s.status === "flagged").length,
     approved: project.submissions.filter((s) => s.status === "approved").length,
+    rejected: 0,
   };
-  const rows = project.submissions.filter((s) => s.status === status);
+  const rows =
+    status === "all" ? project.submissions : project.submissions.filter((s) => s.status === status);
 
   const columns: Column<Submission>[] = [
     { key: "collector", header: "Collector", render: (s) => <span className="font-medium">{s.collectorName}</span> },
     { key: "at", header: "Submitted", render: (s) => <span className="text-muted-foreground">{s.submittedAt}</span> },
     { key: "duration", header: "Duration", render: (s) => `${s.durationMin} min` },
     { key: "gps", header: "GPS", render: (s) => <span className="font-mono text-xs text-muted-foreground">{s.gps}</span> },
+    { key: "location", header: "Location", render: (s) => <span className="text-muted-foreground">{s.location}</span> },
     {
-      key: "flags",
-      header: "Flags",
-      render: (s) =>
-        s.status === "flagged" ? (
-          <Badge tone="warning">Quality</Badge>
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        ),
+      key: "status",
+      header: "Status",
+      render: (s) => (
+        <div className="flex items-center gap-2">
+          <StatusBadge status={s.status} />
+          {(() => {
+            const f = flagSignal(s);
+            return f ? (
+              <span
+                className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800"
+                title={f.detail}
+              >
+                <WarningIcon /> {f.label}
+              </span>
+            ) : null;
+          })()}
+        </div>
+      ),
+    },
+    {
+      key: "action",
+      header: "Action",
+      render: () => <span className="text-xs text-muted-foreground">Review →</span>,
     },
   ];
+
+  function openDetail(s: Submission) {
+    setSelectedQ(0);
+    setAuditOpen(true);
+    setDetail(s);
+  }
+
+  const flag = detail ? flagSignal(detail) : null;
 
   return (
     <>
@@ -275,9 +325,11 @@ function SubmissionsTab({ project }: { project: Project }) {
           value={status}
           onChange={setStatus}
           tabs={[
-            { id: "pending", label: "Pending", count: counts.pending },
+            { id: "all", label: "All", count: counts.all },
+            { id: "pending", label: "Awaiting approval", count: counts.pending },
             { id: "flagged", label: "Flagged", count: counts.flagged },
             { id: "approved", label: "Approved", count: counts.approved },
+            { id: "rejected", label: "Rejected", count: counts.rejected },
           ]}
         />
       </div>
@@ -285,16 +337,20 @@ function SubmissionsTab({ project }: { project: Project }) {
       <DataTable
         columns={columns}
         rows={rows}
-        onRowClick={(s) => setDetail(s)}
-        rowClassName={(s) => (s.status === "flagged" ? "bg-red-50/60 hover:!bg-red-50" : "")}
+        onRowClick={(s) => openDetail(s)}
+        rowClassName={(s) => (s.status === "flagged" ? "bg-amber-50/70 hover:!bg-amber-50" : "")}
         empty={
           <EmptyState
             title={
               status === "flagged"
                 ? "No flagged submissions"
                 : status === "pending"
-                  ? "No submissions pending review"
-                  : "No approved submissions yet"
+                  ? "No submissions awaiting approval"
+                  : status === "approved"
+                    ? "No approved submissions yet"
+                    : status === "rejected"
+                      ? "No rejected submissions"
+                      : "No submissions yet"
             }
             description={
               status === "flagged"
@@ -311,87 +367,81 @@ function SubmissionsTab({ project }: { project: Project }) {
         title={detail ? `Submission by ${detail.collectorName}` : ""}
         size="lg"
         footer={
-          detail?.status === "flagged" ? (
+          detail && detail.status !== "approved" ? (
             <>
               <button className={btnSecondary}>Reject</button>
-              <button className={btnPrimary}>Approve</button>
-            </>
-          ) : detail?.status === "pending" ? (
-            <>
-              <button className={btnSecondary}>Flag for review</button>
               <button className={btnPrimary}>Approve</button>
             </>
           ) : null
         }
       >
         {detail && (
-          <div className="space-y-5 text-sm">
-            {detail.status === "flagged" && (
-              <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
-                <p className="text-xs font-medium uppercase tracking-wide text-amber-900">
-                  Flag reason
-                </p>
-                <p className="mt-1 text-sm text-amber-900">{detail.flagReason}</p>
+          <div className="space-y-4 text-sm">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
+              <MetaCell label="Project" value={project.name} />
+              <MetaCell label="Survey" value={project.formName || "—"} />
+              <MetaCell label="Submitted" value={detail.submittedAt} />
+              <MetaCell label="Duration" value={`${detail.durationMin} min`} />
+              <MetaCell label="Location" value={detail.location} sub={detail.gps} />
+              <MetaCell label="Status" node={<StatusBadge status={detail.status} />} />
+            </div>
+
+            {flag && (
+              <div className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900">
+                <span className="text-amber-700"><WarningIcon /></span>
+                <p className="truncate text-sm">{flag.detail}</p>
               </div>
             )}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">Submitted</p>
-                <p className="mt-0.5 text-foreground">{detail.submittedAt}</p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">Duration</p>
-                <p className="mt-0.5 text-foreground">{detail.durationMin} minutes</p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">Location</p>
-                <p className="mt-0.5 text-foreground">{detail.location}</p>
-                <p className="mt-0.5 font-mono text-xs text-muted-foreground">{detail.gps}</p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">Status</p>
-                <p className="mt-0.5"><StatusBadge status={detail.status} /></p>
-              </div>
-            </div>
 
-            <div className="overflow-hidden rounded-md border border-border">
-              <div className="aspect-[3/1] w-full bg-[linear-gradient(120deg,var(--color-muted)_0%,var(--color-secondary)_100%)] relative">
-                <div
-                  className="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary ring-4 ring-primary/20"
-                  style={{ left: "42%", top: "58%" }}
-                  aria-label="GPS pin"
-                />
-                <span className="absolute bottom-2 right-3 text-xs text-muted-foreground">Map preview</span>
-              </div>
-            </div>
-
-            <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Response data
-              </p>
-              <div className="divide-y divide-border rounded-md border border-border">
-                {detail.responses.map((r, i) => (
-                  <div key={i} className="grid grid-cols-3 gap-3 px-3 py-2">
-                    <span className="col-span-1 text-muted-foreground">{r.question}</span>
-                    <span className="col-span-2 text-foreground">{r.answer}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Audit trail
-              </p>
-              <ul className="space-y-1.5">
-                {detail.audit.map((a, i) => (
-                  <li key={i} className="flex gap-3 text-xs">
-                    <span className="w-32 shrink-0 text-muted-foreground">{a.at}</span>
-                    <span className="w-32 shrink-0 text-foreground">{a.who}</span>
-                    <span className="text-muted-foreground">{a.action}</span>
-                  </li>
-                ))}
+            <div className="grid gap-0 overflow-hidden rounded-md border border-border sm:grid-cols-[220px_minmax(0,1fr)]">
+              <ul className="divide-y divide-border border-b border-border sm:border-b-0 sm:border-r">
+                {detail.responses.map((r, i) => {
+                  const active = i === selectedQ;
+                  return (
+                    <li key={i}>
+                      <button
+                        onClick={() => setSelectedQ(i)}
+                        className={`flex w-full items-start gap-2 px-3 py-2 text-left text-sm transition-colors ${
+                          active ? "bg-muted/60 text-foreground" : "text-muted-foreground hover:bg-muted/30"
+                        }`}
+                      >
+                        <span className="mt-0.5 w-6 shrink-0 text-xs tabular-nums text-muted-foreground">
+                          Q{i + 1}
+                        </span>
+                        <span className="truncate">{r.question}</span>
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
+              <div className="px-4 py-3">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Question</p>
+                <p className="mt-1 text-foreground">{detail.responses[selectedQ]?.question}</p>
+                <p className="mt-4 text-xs uppercase tracking-wide text-muted-foreground">Response</p>
+                <p className="mt-1 text-foreground">{detail.responses[selectedQ]?.answer}</p>
+              </div>
+            </div>
+
+            <div className="rounded-md border border-border">
+              <button
+                onClick={() => setAuditOpen((o) => !o)}
+                className="flex w-full items-center justify-between px-3 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground"
+              >
+                Audit trail
+                <span aria-hidden>{auditOpen ? "−" : "+"}</span>
+              </button>
+              {auditOpen && (
+                <ul className="border-t border-border px-3 py-2">
+                  {detail.audit.map((a, i) => (
+                    <li key={i} className="flex items-start gap-3 py-1 text-xs">
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/50" />
+                      <span className="w-36 shrink-0 text-muted-foreground tabular-nums">{a.at}</span>
+                      <span className="w-32 shrink-0 text-foreground">{a.who}</span>
+                      <span className="text-muted-foreground">{a.action}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         )}
@@ -400,8 +450,34 @@ function SubmissionsTab({ project }: { project: Project }) {
   );
 }
 
+function MetaCell({
+  label,
+  value,
+  sub,
+  node,
+}: {
+  label: string;
+  value?: string;
+  sub?: string;
+  node?: ReactNode;
+}) {
+  return (
+    <div>
+      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+      {node ? <div className="mt-0.5">{node}</div> : <p className="mt-0.5 text-foreground">{value}</p>}
+      {sub && <p className="mt-0.5 font-mono text-xs text-muted-foreground">{sub}</p>}
+    </div>
+  );
+}
+
 /* ---------------- Analytics ---------------- */
+type SortKey = "name" | "subs" | "avgDur" | "approvalRate";
 function AnalyticsTab({ project }: { project: Project }) {
+  const [includeAll, setIncludeAll] = useState(false);
+  const [qIdx, setQIdx] = useState(0);
+  const [sortKey, setSortKey] = useState<SortKey>("subs");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
   if (project.submissions.length === 0) {
     return (
       <EmptyState
@@ -411,101 +487,292 @@ function AnalyticsTab({ project }: { project: Project }) {
     );
   }
 
-  // completion series (mocked)
+  const subs = project.submissions;
+  const approved = subs.filter((s) => s.status === "approved");
+  const pending = subs.filter((s) => s.status === "pending");
+  const flagged = subs.filter((s) => s.status === "flagged");
+  const approvalRate = subs.length ? Math.round((approved.length / subs.length) * 100) : 0;
+  const avgDuration = subs.length
+    ? Math.round(subs.reduce((a, s) => a + s.durationMin, 0) / subs.length)
+    : 0;
+
   const series = [4, 8, 12, 10, 15, 18, 22];
   const max = Math.max(...series);
-  const width = 560, height = 140;
+  const width = 640,
+    height = 160;
   const step = width / (series.length - 1);
-  const pts = series.map((v, i) => `${i * step},${height - (v / max) * (height - 20) - 10}`).join(" ");
+  const pts = series
+    .map((v, i) => `${i * step},${height - (v / max) * (height - 30) - 15}`)
+    .join(" ");
 
-  const leaderboard = project.collectorIds.slice(0, 5).map((id) => {
-    const c = allCollectors.find((x) => x.id === id)!;
-    const subs = project.submissions.filter((s) => s.collectorId === id).length;
-    const flagged = project.submissions.filter((s) => s.collectorId === id && s.status === "flagged").length;
-    return { c, subs, flagged };
+  const total = subs.length;
+  const donut = [
+    { label: "Approved", count: approved.length, color: "var(--color-primary)" },
+    { label: "Awaiting approval", count: pending.length, color: "var(--color-muted-foreground)" },
+    { label: "Flagged / rejected", count: flagged.length, color: "#d97706" },
+  ];
+  let acc = 0;
+  const r = 52,
+    c = 2 * Math.PI * r;
+  const donutSegs = donut.map((d) => {
+    const frac = total ? d.count / total : 0;
+    const seg = { ...d, offset: acc, length: c * frac };
+    acc += c * frac;
+    return seg;
   });
+
+  const perf = project.collectorIds
+    .map((id) => {
+      const cx = allCollectors.find((x) => x.id === id);
+      if (!cx) return null;
+      const mine = subs.filter((s) => s.collectorId === id);
+      const app = mine.filter((s) => s.status === "approved").length;
+      const avg = mine.length ? Math.round(mine.reduce((a, s) => a + s.durationMin, 0) / mine.length) : 0;
+      const rate = mine.length ? Math.round((app / mine.length) * 100) : 0;
+      return { id, name: cx.name, subs: mine.length, avgDur: avg, approvalRate: rate };
+    })
+    .filter((x): x is { id: string; name: string; subs: number; avgDur: number; approvalRate: number } => x !== null);
+
+  const sorted = [...perf].sort((a, b) => {
+    const dir = sortDir === "asc" ? 1 : -1;
+    if (sortKey === "name") return a.name.localeCompare(b.name) * dir;
+    return ((a[sortKey] as number) - (b[sortKey] as number)) * dir;
+  });
+  function toggleSort(k: SortKey) {
+    if (k === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else {
+      setSortKey(k);
+      setSortDir(k === "name" ? "asc" : "desc");
+    }
+  }
+  const arrow = (k: SortKey) => (sortKey === k ? (sortDir === "asc" ? " ↑" : " ↓") : "");
+
+  const byLocation = subs.reduce<Record<string, number>>((acc, s) => {
+    const country = s.location.split(",").pop()?.trim() || s.location;
+    acc[country] = (acc[country] ?? 0) + 1;
+    return acc;
+  }, {});
+  const locRows = Object.entries(byLocation).sort((a, b) => b[1] - a[1]);
+  const locMax = Math.max(1, ...locRows.map(([, v]) => v));
+
+  const pool = includeAll ? subs : approved;
+  const questions = Array.from(new Set(subs.flatMap((s) => s.responses.map((r) => r.question))));
+  const currentQ = questions[qIdx] ?? questions[0];
+  const answers = pool.flatMap((s) => s.responses.filter((r) => r.question === currentQ).map((r) => r.answer));
+  const answerCounts = answers.reduce<Record<string, number>>((acc, a) => {
+    acc[a] = (acc[a] ?? 0) + 1;
+    return acc;
+  }, {});
+  const unique = Object.keys(answerCounts);
+  const isChoice = unique.length > 0 && unique.length <= 6;
+  const sortedAnswers = Object.entries(answerCounts).sort((a, b) => b[1] - a[1]);
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-border bg-card p-5">
-        <p className="text-sm font-medium text-foreground">Completion rate over time</p>
-        <p className="text-xs text-muted-foreground">Daily submissions, last 7 days</p>
-        <svg viewBox={`0 0 ${width} ${height}`} className="mt-4 w-full">
-          <polyline points={pts} fill="none" stroke="var(--color-primary)" strokeWidth="2" />
-          {series.map((v, i) => (
-            <circle
-              key={i}
-              cx={i * step}
-              cy={height - (v / max) * (height - 20) - 10}
-              r="3"
-              fill="var(--color-primary)"
-            />
-          ))}
-        </svg>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Total submissions" value={subs.length} />
+        <StatCard label="Approval rate" value={`${approvalRate}%`} hint={`${approved.length} approved`} />
+        <StatCard label="Average duration" value={`${avgDuration} min`} />
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <p className="text-xs text-amber-900/80">Flagged for review</p>
+          <p className="mt-1 text-2xl font-semibold tracking-tight text-amber-900">{flagged.length}</p>
+          <p className="mt-1 text-xs text-amber-900/70">Needs attention</p>
+        </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="rounded-lg border border-border bg-card p-5">
+          <p className="text-sm font-medium text-foreground">Submissions over time</p>
+          <p className="text-xs text-muted-foreground">Daily volume across active date range</p>
+          <svg viewBox={`0 0 ${width} ${height}`} className="mt-4 w-full">
+            <polyline points={pts} fill="none" stroke="var(--color-primary)" strokeWidth="2" />
+            {series.map((v, i) => (
+              <circle
+                key={i}
+                cx={i * step}
+                cy={height - (v / max) * (height - 30) - 15}
+                r="3"
+                fill="var(--color-primary)"
+              />
+            ))}
+          </svg>
+        </div>
+
+        <div className="rounded-lg border border-border bg-card p-5">
+          <p className="text-sm font-medium text-foreground">Status breakdown</p>
+          <div className="mt-4 flex items-center gap-5">
+            <svg viewBox="0 0 140 140" className="h-32 w-32 -rotate-90">
+              <circle cx="70" cy="70" r={r} fill="none" stroke="var(--color-muted)" strokeWidth="16" />
+              {donutSegs.map((s, i) => (
+                <circle
+                  key={i}
+                  cx="70"
+                  cy="70"
+                  r={r}
+                  fill="none"
+                  stroke={s.color}
+                  strokeWidth="16"
+                  strokeDasharray={`${s.length} ${c - s.length}`}
+                  strokeDashoffset={-s.offset}
+                />
+              ))}
+            </svg>
+            <ul className="space-y-1.5 text-sm">
+              {donut.map((d) => (
+                <li key={d.label} className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: d.color }} />
+                  <span className="text-foreground">{d.label}</span>
+                  <span className="tabular-nums text-muted-foreground">
+                    {d.count} · {total ? Math.round((d.count / total) * 100) : 0}%
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-border bg-card">
+        <div className="border-b border-border px-5 py-3">
           <p className="text-sm font-medium text-foreground">Collector performance</p>
-          <table className="mt-3 w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <th className="py-2">Collector</th>
-                <th className="py-2 text-right">Subs</th>
-                <th className="py-2 text-right">Flagged</th>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40">
+              <tr className="text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <th className="cursor-pointer px-4 py-2.5" onClick={() => toggleSort("name")}>
+                  Collector{arrow("name")}
+                </th>
+                <th className="cursor-pointer px-4 py-2.5 text-right" onClick={() => toggleSort("subs")}>
+                  Submissions{arrow("subs")}
+                </th>
+                <th className="cursor-pointer px-4 py-2.5 text-right" onClick={() => toggleSort("avgDur")}>
+                  Avg duration{arrow("avgDur")}
+                </th>
+                <th className="cursor-pointer px-4 py-2.5 text-right" onClick={() => toggleSort("approvalRate")}>
+                  Approval rate{arrow("approvalRate")}
+                </th>
               </tr>
             </thead>
             <tbody>
-              {leaderboard.map((row) => (
-                <tr key={row.c.id} className="border-t border-border">
-                  <td className="py-2">{row.c.name}</td>
-                  <td className="py-2 text-right tabular-nums">{row.subs}</td>
-                  <td className="py-2 text-right tabular-nums">{row.flagged}</td>
+              {sorted.map((row) => (
+                <tr key={row.id} className="border-t border-border">
+                  <td className="px-4 py-3 text-foreground">{row.name}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{row.subs}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{row.avgDur ? `${row.avgDur} min` : "—"}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{row.subs ? `${row.approvalRate}%` : "—"}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-
-        <div className="rounded-lg border border-border bg-card p-5">
-          <p className="text-sm font-medium text-foreground">Coverage map</p>
-          <div className="mt-3 aspect-[3/2] w-full overflow-hidden rounded-md bg-[linear-gradient(120deg,var(--color-muted)_0%,var(--color-secondary)_100%)] relative">
-            {project.submissions.map((s, i) => (
-              <span
-                key={s.id}
-                className="absolute h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary"
-                style={{ left: `${20 + i * 12}%`, top: `${30 + (i % 3) * 15}%` }}
-              />
-            ))}
-          </div>
-        </div>
       </div>
 
       <div className="rounded-lg border border-border bg-card p-5">
-        <p className="text-sm font-medium text-foreground">Primary water source</p>
-        <p className="text-xs text-muted-foreground">Response distribution</p>
+        <p className="text-sm font-medium text-foreground">Coverage by location</p>
         <ul className="mt-3 space-y-2">
-          {[
-            { label: "Borehole", pct: 42 },
-            { label: "Piped", pct: 28 },
-            { label: "Well", pct: 18 },
-            { label: "River / surface", pct: 12 },
-          ].map((row) => (
-            <li key={row.label} className="text-sm">
+          {locRows.map(([loc, n]) => (
+            <li key={loc} className="text-sm">
               <div className="flex justify-between text-muted-foreground">
-                <span className="text-foreground">{row.label}</span>
-                <span className="tabular-nums">{row.pct}%</span>
+                <span className="text-foreground">{loc}</span>
+                <span className="tabular-nums">{n} submission{n === 1 ? "" : "s"}</span>
               </div>
               <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                <div className="h-full bg-primary" style={{ width: `${row.pct}%` }} />
+                <div className="h-full bg-primary" style={{ width: `${(n / locMax) * 100}%` }} />
               </div>
             </li>
           ))}
         </ul>
       </div>
+
+      <div className="rounded-lg border border-border bg-card p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-foreground">Question response breakdown</p>
+            <p className="text-xs text-muted-foreground">
+              Question {Math.min(qIdx + 1, questions.length)} of {questions.length} · {answers.length}{" "}
+              response{answers.length === 1 ? "" : "s"}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={includeAll}
+                onChange={(e) => setIncludeAll(e.target.checked)}
+                className="h-3.5 w-3.5 rounded border-input"
+              />
+              Include non-approved
+            </label>
+            <div className="flex items-center gap-1">
+              <button
+                className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
+                onClick={() => setQIdx((i) => Math.max(0, i - 1))}
+                disabled={qIdx === 0}
+              >
+                ←
+              </button>
+              <select
+                value={qIdx}
+                onChange={(e) => setQIdx(Number(e.target.value))}
+                className="rounded-md border border-input bg-background px-2 py-1 text-xs"
+              >
+                {questions.map((q, i) => (
+                  <option key={q} value={i}>
+                    Q{i + 1}. {q}
+                  </option>
+                ))}
+              </select>
+              <button
+                className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
+                onClick={() => setQIdx((i) => Math.min(questions.length - 1, i + 1))}
+                disabled={qIdx >= questions.length - 1}
+              >
+                →
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <p className="mt-4 text-sm text-foreground">{currentQ}</p>
+
+        {answers.length === 0 ? (
+          <p className="mt-4 text-sm text-muted-foreground">No responses to display for this question.</p>
+        ) : isChoice ? (
+          <ul className="mt-4 space-y-2">
+            {sortedAnswers.map(([label, count]) => {
+              const pct = Math.round((count / answers.length) * 100);
+              return (
+                <li key={label} className="text-sm">
+                  <div className="flex justify-between text-muted-foreground">
+                    <span className="text-foreground">{label}</span>
+                    <span className="tabular-nums">
+                      {count} · {pct}%
+                    </span>
+                  </div>
+                  <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                    <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <div className="mt-4 max-h-72 overflow-y-auto rounded-md border border-border">
+            <ul className="divide-y divide-border">
+              {answers.map((a, i) => (
+                <li key={i} className="px-3 py-2 text-sm text-foreground">
+                  {a}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
+
 
 /* ---------------- Training ---------------- */
 function TrainingTab({ project }: { project: Project }) {
