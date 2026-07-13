@@ -43,13 +43,43 @@ export interface Submission {
   audit: { at: string; who: string; action: string }[];
 }
 
+export type MaterialType = "PDF" | "Video" | "Slide deck";
+
+export interface TrainingMaterial {
+  id: string;
+  filename: string;
+  type: MaterialType;
+  uploadedOn: string;
+}
+
+export interface AssessmentQuestion {
+  id: string;
+  text: string;
+  options: { id: string; text: string }[];
+  correctOptionId: string;
+}
+
+export type MaterialsStatus = "not started" | "viewed";
+export type AssessmentStatus = "not attempted" | "in progress" | "passed" | "failed";
+
+export interface TrainingProgress {
+  collectorId: string;
+  materialsStatus: MaterialsStatus;
+  assessmentStatus: AssessmentStatus;
+  score: number | null;
+  attemptsUsed: number;
+  lastAttemptAt: string | null;
+}
+
 export interface TrainingModule {
   id: string;
   title: string;
-  format: "PDF" | "Video" | "Slide deck";
   addedOn: string;
-  completions: number;
-  assigned: number;
+  passingScore: number;
+  maxAttempts: number;
+  materials: TrainingMaterial[];
+  questions: AssessmentQuestion[];
+  progress: TrainingProgress[];
 }
 
 export interface ProjectMessage {
@@ -204,9 +234,146 @@ export const projects: Project[] = [
     collectorIds: ["c1", "c2", "c3", "c4", "c7", "c8", "c10"],
     submissions: populatedSubs,
     training: [
-      { id: "t1", title: "Consent and refusal handling", format: "Video", addedOn: "2026-05-28", completions: 7, assigned: 7 },
-      { id: "t2", title: "WASH questionnaire walkthrough", format: "PDF", addedOn: "2026-05-30", completions: 5, assigned: 7 },
-      { id: "t3", title: "GPS + photo capture protocol", format: "Slide deck", addedOn: "2026-06-02", completions: 4, assigned: 7 },
+      {
+        id: "t1",
+        title: "Consent and refusal handling",
+        addedOn: "2026-05-28",
+        passingScore: 80,
+        maxAttempts: 3,
+        materials: [
+          { id: "mat1", filename: "consent-protocol.pdf", type: "PDF", uploadedOn: "2026-05-28" },
+          { id: "mat2", filename: "refusal-scenarios.mp4", type: "Video", uploadedOn: "2026-05-28" },
+        ],
+        questions: [
+          {
+            id: "q1",
+            text: "If a respondent asks to stop mid-interview, what should you do?",
+            options: [
+              { id: "o1", text: "Continue anyway — the data is important" },
+              { id: "o2", text: "Stop immediately and mark the submission as refused" },
+              { id: "o3", text: "Offer them a small incentive to continue" },
+              { id: "o4", text: "Skip the sensitive questions and continue" },
+            ],
+            correctOptionId: "o2",
+          },
+          {
+            id: "q2",
+            text: "Consent must be obtained before which step?",
+            options: [
+              { id: "o1", text: "Any recording or note-taking begins" },
+              { id: "o2", text: "The GPS reading is taken" },
+              { id: "o3", text: "Payment is processed" },
+              { id: "o4", text: "The supervisor arrives" },
+            ],
+            correctOptionId: "o1",
+          },
+          {
+            id: "q3",
+            text: "A caregiver consents but the child refuses to be measured. You should:",
+            options: [
+              { id: "o1", text: "Measure the child anyway — the adult consented" },
+              { id: "o2", text: "Respect the child's refusal and record it" },
+              { id: "o3", text: "Ask the caregiver to convince the child" },
+              { id: "o4", text: "Come back later without telling the child" },
+            ],
+            correctOptionId: "o2",
+          },
+          {
+            id: "q4",
+            text: "Which of these is NOT part of informed consent?",
+            options: [
+              { id: "o1", text: "Explaining the purpose of the study" },
+              { id: "o2", text: "Stating that participation is voluntary" },
+              { id: "o3", text: "Guaranteeing a specific outcome from the study" },
+              { id: "o4", text: "Describing how data will be used" },
+            ],
+            correctOptionId: "o3",
+          },
+          {
+            id: "q5",
+            text: "If a respondent seems distressed, you should:",
+            options: [
+              { id: "o1", text: "Pause the interview and check in with them" },
+              { id: "o2", text: "Speed up to finish quickly" },
+              { id: "o3", text: "Ignore it — it's not your role" },
+              { id: "o4", text: "Record their reaction as data" },
+            ],
+            correctOptionId: "o1",
+          },
+        ],
+        progress: [
+          { collectorId: "c1", materialsStatus: "viewed", assessmentStatus: "passed", score: 92, attemptsUsed: 1, lastAttemptAt: "2026-06-02 10:14" },
+          { collectorId: "c2", materialsStatus: "viewed", assessmentStatus: "passed", score: 88, attemptsUsed: 1, lastAttemptAt: "2026-06-02 11:03" },
+          { collectorId: "c3", materialsStatus: "viewed", assessmentStatus: "failed", score: 60, attemptsUsed: 2, lastAttemptAt: "2026-06-04 15:22" },
+          { collectorId: "c4", materialsStatus: "viewed", assessmentStatus: "passed", score: 76, attemptsUsed: 1, lastAttemptAt: "2026-06-03 09:45" },
+          { collectorId: "c7", materialsStatus: "viewed", assessmentStatus: "in progress", score: null, attemptsUsed: 1, lastAttemptAt: "2026-06-05 08:11" },
+          { collectorId: "c8", materialsStatus: "viewed", assessmentStatus: "not attempted", score: null, attemptsUsed: 0, lastAttemptAt: null },
+          { collectorId: "c10", materialsStatus: "not started", assessmentStatus: "not attempted", score: null, attemptsUsed: 0, lastAttemptAt: null },
+        ],
+      },
+      {
+        id: "t2",
+        title: "WASH questionnaire walkthrough",
+        addedOn: "2026-05-30",
+        passingScore: 80,
+        maxAttempts: 3,
+        materials: [
+          { id: "mat3", filename: "wash-questionnaire-guide.pdf", type: "PDF", uploadedOn: "2026-05-30" },
+        ],
+        questions: [],
+        progress: [
+          { collectorId: "c1", materialsStatus: "viewed", assessmentStatus: "not attempted", score: null, attemptsUsed: 0, lastAttemptAt: null },
+          { collectorId: "c2", materialsStatus: "viewed", assessmentStatus: "not attempted", score: null, attemptsUsed: 0, lastAttemptAt: null },
+          { collectorId: "c3", materialsStatus: "viewed", assessmentStatus: "not attempted", score: null, attemptsUsed: 0, lastAttemptAt: null },
+          { collectorId: "c4", materialsStatus: "viewed", assessmentStatus: "not attempted", score: null, attemptsUsed: 0, lastAttemptAt: null },
+          { collectorId: "c7", materialsStatus: "not started", assessmentStatus: "not attempted", score: null, attemptsUsed: 0, lastAttemptAt: null },
+          { collectorId: "c8", materialsStatus: "not started", assessmentStatus: "not attempted", score: null, attemptsUsed: 0, lastAttemptAt: null },
+          { collectorId: "c10", materialsStatus: "not started", assessmentStatus: "not attempted", score: null, attemptsUsed: 0, lastAttemptAt: null },
+        ],
+      },
+      {
+        id: "t3",
+        title: "GPS + photo capture protocol",
+        addedOn: "2026-06-02",
+        passingScore: 75,
+        maxAttempts: 2,
+        materials: [
+          { id: "mat4", filename: "gps-photo-protocol.pptx", type: "Slide deck", uploadedOn: "2026-06-02" },
+        ],
+        questions: [
+          {
+            id: "q1",
+            text: "GPS readings should be taken:",
+            options: [
+              { id: "o1", text: "At the entrance to the dwelling, before starting" },
+              { id: "o2", text: "Anywhere convenient during the interview" },
+              { id: "o3", text: "Only if the respondent asks about it" },
+              { id: "o4", text: "At the office after the visit" },
+            ],
+            correctOptionId: "o1",
+          },
+          {
+            id: "q2",
+            text: "If GPS accuracy is above 20m, you should:",
+            options: [
+              { id: "o1", text: "Submit anyway" },
+              { id: "o2", text: "Wait and retake until accuracy is under 10m" },
+              { id: "o3", text: "Skip GPS for this visit" },
+              { id: "o4", text: "Type the coordinates manually" },
+            ],
+            correctOptionId: "o2",
+          },
+        ],
+        progress: [
+          { collectorId: "c1", materialsStatus: "viewed", assessmentStatus: "passed", score: 100, attemptsUsed: 1, lastAttemptAt: "2026-06-06 09:30" },
+          { collectorId: "c2", materialsStatus: "viewed", assessmentStatus: "passed", score: 100, attemptsUsed: 1, lastAttemptAt: "2026-06-06 10:12" },
+          { collectorId: "c3", materialsStatus: "viewed", assessmentStatus: "passed", score: 75, attemptsUsed: 2, lastAttemptAt: "2026-06-07 14:00" },
+          { collectorId: "c4", materialsStatus: "viewed", assessmentStatus: "not attempted", score: null, attemptsUsed: 0, lastAttemptAt: null },
+          { collectorId: "c7", materialsStatus: "not started", assessmentStatus: "not attempted", score: null, attemptsUsed: 0, lastAttemptAt: null },
+          { collectorId: "c8", materialsStatus: "not started", assessmentStatus: "not attempted", score: null, attemptsUsed: 0, lastAttemptAt: null },
+          { collectorId: "c10", materialsStatus: "not started", assessmentStatus: "not attempted", score: null, attemptsUsed: 0, lastAttemptAt: null },
+        ],
+      },
     ],
     messages: [
       { id: "m1", sentAt: "2026-07-08 09:00", channel: ["in-app", "sms"], recipients: 7, preview: "Reminder: submit all Monday visits by 6pm.", delivered: 7, failed: 0 },
@@ -232,7 +399,33 @@ export const projects: Project[] = [
       },
     ],
     training: [
-      { id: "t4", title: "Post-harvest loss protocol", format: "PDF", addedOn: "2026-06-20", completions: 2, assigned: 2 },
+      {
+        id: "t4",
+        title: "Post-harvest loss protocol",
+        addedOn: "2026-06-20",
+        passingScore: 80,
+        maxAttempts: 3,
+        materials: [
+          { id: "mat5", filename: "post-harvest-guide.pdf", type: "PDF", uploadedOn: "2026-06-20" },
+        ],
+        questions: [
+          {
+            id: "q1",
+            text: "How should crop loss be estimated when the farmer is unsure?",
+            options: [
+              { id: "o1", text: "Enter zero" },
+              { id: "o2", text: "Use the visual reference chart in section 3" },
+              { id: "o3", text: "Skip the question" },
+              { id: "o4", text: "Ask the neighbor instead" },
+            ],
+            correctOptionId: "o2",
+          },
+        ],
+        progress: [
+          { collectorId: "c10", materialsStatus: "viewed", assessmentStatus: "passed", score: 100, attemptsUsed: 1, lastAttemptAt: "2026-06-22 10:00" },
+          { collectorId: "c11", materialsStatus: "viewed", assessmentStatus: "passed", score: 100, attemptsUsed: 1, lastAttemptAt: "2026-06-22 11:30" },
+        ],
+      },
     ],
     messages: [],
   },

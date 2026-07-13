@@ -775,37 +775,686 @@ function AnalyticsTab({ project }: { project: Project }) {
 
 
 /* ---------------- Training ---------------- */
+type ModuleSubTab = "materials" | "assessment" | "progress";
+type ProgressFilter = "all" | "not started" | "in progress" | "passed" | "failed";
+
+function materialTypeSummary(m: TrainingModule): string {
+  if (m.materials.length === 0) return "No materials";
+  const counts: Record<string, number> = {};
+  for (const mat of m.materials) counts[mat.type] = (counts[mat.type] ?? 0) + 1;
+  return Object.entries(counts)
+    .map(([t, n]) => `${n} ${t}${n > 1 ? "s" : ""}`)
+    .join(", ");
+}
+function moduleAvgScore(m: TrainingModule): string {
+  const scores = m.progress.map((p) => p.score).filter((s): s is number => s !== null);
+  if (scores.length === 0) return "—";
+  return `${Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)}%`;
+}
+function moduleCompletionRate(m: TrainingModule): string {
+  if (m.progress.length === 0) return "—";
+  const passed = m.progress.filter((p) => p.assessmentStatus === "passed").length;
+  return `${Math.round((passed / m.progress.length) * 100)}%`;
+}
+
+function MaterialIcon({ type }: { type: TrainingModule["materials"][number]["type"] }) {
+  const base = "flex h-8 w-8 items-center justify-center rounded-md text-xs font-semibold";
+  if (type === "PDF") return <span className={`${base} bg-red-50 text-red-700`}>PDF</span>;
+  if (type === "Video") return <span className={`${base} bg-blue-50 text-blue-700`}>VID</span>;
+  return <span className={`${base} bg-amber-50 text-amber-800`}>PPT</span>;
+}
+
 function TrainingTab({ project }: { project: Project }) {
-  if (project.training.length === 0) {
+  const [modules, setModules] = useState<TrainingModule[]>(project.training);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selected = modules.find((m) => m.id === selectedId) ?? null;
+
+  function updateModule(next: TrainingModule) {
+    setModules((prev) => prev.map((m) => (m.id === next.id ? next : m)));
+  }
+  function createModule() {
+    const id = `t_${Date.now()}`;
+    const fresh: TrainingModule = {
+      id,
+      title: "Untitled module",
+      addedOn: new Date().toISOString().slice(0, 10),
+      passingScore: 80,
+      maxAttempts: 3,
+      materials: [],
+      questions: [],
+      progress: [],
+    };
+    setModules((prev) => [...prev, fresh]);
+    setSelectedId(id);
+  }
+
+  if (selected) {
     return (
-      <EmptyState
-        title="No training modules yet"
-        description="Upload PDFs, videos, or slide decks and assign them to collectors before fieldwork starts."
-        action={<button className={btnPrimary}>Upload module</button>}
+      <ModuleDetail
+        module={selected}
+        onBack={() => setSelectedId(null)}
+        onChange={updateModule}
       />
     );
   }
+
+  if (modules.length === 0) {
+    return (
+      <EmptyState
+        title="No training modules yet"
+        description="Create a module to upload materials and set a knowledge check before assigning collectors."
+        action={
+          <button className={btnPrimary} onClick={createModule}>
+            + New module
+          </button>
+        }
+      />
+    );
+  }
+
   const columns: Column<TrainingModule>[] = [
     { key: "title", header: "Module", render: (m) => <span className="font-medium">{m.title}</span> },
-    { key: "format", header: "Format", render: (m) => <Badge tone="muted">{m.format}</Badge> },
-    { key: "added", header: "Added", render: (m) => <span className="text-muted-foreground">{m.addedOn}</span> },
+    { key: "materials", header: "Materials", render: (m) => <span className="text-muted-foreground">{materialTypeSummary(m)}</span> },
     {
-      key: "completions",
-      header: "Completed",
-      render: (m) => (
-        <span className="tabular-nums text-foreground">
-          {m.completions} / {m.assigned}
-        </span>
-      ),
+      key: "questions",
+      header: "Questions",
+      render: (m) =>
+        m.questions.length === 0 ? (
+          <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">
+            <WarningIcon /> None yet
+          </span>
+        ) : (
+          <span className="tabular-nums">{m.questions.length}</span>
+        ),
     },
+    {
+      key: "assigned",
+      header: "Assigned",
+      render: (m) => <span className="tabular-nums">{m.progress.length}</span>,
+    },
+    { key: "avg", header: "Avg score", render: (m) => <span className="tabular-nums">{moduleAvgScore(m)}</span> },
+    { key: "rate", header: "Completion", render: (m) => <span className="tabular-nums">{moduleCompletionRate(m)}</span> },
   ];
+
   return (
     <>
       <div className="mb-4 flex justify-end">
-        <button className={btnPrimary}>Upload module</button>
+        <button className={btnPrimary} onClick={createModule}>
+          + New module
+        </button>
       </div>
-      <DataTable columns={columns} rows={project.training} />
+      <DataTable columns={columns} rows={modules} onRowClick={(m) => setSelectedId(m.id)} />
     </>
+  );
+}
+
+function ModuleDetail({
+  module: mod,
+  onBack,
+  onChange,
+}: {
+  module: TrainingModule;
+  onBack: () => void;
+  onChange: (next: TrainingModule) => void;
+}) {
+  const [sub, setSub] = useState<ModuleSubTab>("materials");
+  const [assignOpen, setAssignOpen] = useState(false);
+
+  function assignCollectors(ids: string[]) {
+    const existing = new Set(mod.progress.map((p) => p.collectorId));
+    const additions = ids
+      .filter((id) => !existing.has(id))
+      .map((id) => ({
+        collectorId: id,
+        materialsStatus: "not started" as const,
+        assessmentStatus: "not attempted" as const,
+        score: null,
+        attemptsUsed: 0,
+        lastAttemptAt: null,
+      }));
+    onChange({ ...mod, progress: [...mod.progress, ...additions] });
+    setAssignOpen(false);
+  }
+
+  return (
+    <>
+      <div className="mb-2">
+        <button onClick={onBack} className="text-xs text-muted-foreground hover:text-foreground">
+          ← All modules
+        </button>
+      </div>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <input
+            value={mod.title}
+            onChange={(e) => onChange({ ...mod, title: e.target.value })}
+            className="w-full max-w-lg rounded-md border border-transparent bg-transparent px-1 -mx-1 text-xl font-semibold tracking-tight text-foreground hover:border-input focus:border-input focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+          <p className="mt-1 text-sm text-muted-foreground">
+            Added {mod.addedOn} · {mod.materials.length} material{mod.materials.length === 1 ? "" : "s"} · {mod.questions.length} question{mod.questions.length === 1 ? "" : "s"} · {mod.progress.length} assigned
+          </p>
+        </div>
+        <button className={btnPrimary} onClick={() => setAssignOpen(true)}>
+          Assign collectors
+        </button>
+      </div>
+
+      <Tabs<ModuleSubTab>
+        value={sub}
+        onChange={setSub}
+        tabs={[
+          { id: "materials", label: "Materials", count: mod.materials.length },
+          { id: "assessment", label: "Assessment", count: mod.questions.length },
+          { id: "progress", label: "Collector progress", count: mod.progress.length },
+        ]}
+      />
+
+      <div className="mt-6">
+        {sub === "materials" && <MaterialsSubTab mod={mod} onChange={onChange} onGoToAssessment={() => setSub("assessment")} />}
+        {sub === "assessment" && <AssessmentSubTab mod={mod} onChange={onChange} />}
+        {sub === "progress" && <ProgressSubTab mod={mod} onChange={onChange} onAssign={() => setAssignOpen(true)} />}
+      </div>
+
+      <AssignCollectorsModal
+        open={assignOpen}
+        onClose={() => setAssignOpen(false)}
+        alreadyAssigned={new Set(mod.progress.map((p) => p.collectorId))}
+        onAssign={assignCollectors}
+      />
+    </>
+  );
+}
+
+/* -------- Materials sub-tab -------- */
+function MaterialsSubTab({
+  mod,
+  onChange,
+  onGoToAssessment,
+}: {
+  mod: TrainingModule;
+  onChange: (next: TrainingModule) => void;
+  onGoToAssessment: () => void;
+}) {
+  function removeMaterial(id: string) {
+    onChange({ ...mod, materials: mod.materials.filter((x) => x.id !== id) });
+  }
+  function addMockMaterial() {
+    const id = `mat_${Date.now()}`;
+    onChange({
+      ...mod,
+      materials: [
+        ...mod.materials,
+        {
+          id,
+          filename: "new-material.pdf",
+          type: "PDF",
+          uploadedOn: new Date().toISOString().slice(0, 10),
+        },
+      ],
+    });
+  }
+
+  return (
+    <div className="space-y-4">
+      {mod.materials.length > 0 ? (
+        <div className="overflow-hidden rounded-lg border border-border bg-card">
+          <ul className="divide-y divide-border">
+            {mod.materials.map((mat) => (
+              <li key={mat.id} className="flex items-center gap-3 px-4 py-3">
+                <MaterialIcon type={mat.type} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">{mat.filename}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {mat.type} · uploaded {mat.uploadedOn}
+                  </p>
+                </div>
+                <button className="text-xs font-medium text-muted-foreground hover:text-foreground">
+                  Replace
+                </button>
+                <button
+                  onClick={() => removeMaterial(mat.id)}
+                  className="text-xs font-medium text-muted-foreground hover:text-foreground"
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      <button
+        onClick={addMockMaterial}
+        className="flex w-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-card px-6 py-10 text-center transition-colors hover:border-primary/40 hover:bg-muted/40"
+      >
+        <span className="text-sm font-medium text-foreground">+ Add another material</span>
+        <span className="mt-1 text-xs text-muted-foreground">
+          Drag a PDF, video, or slide deck here — you can add several per module
+        </span>
+      </button>
+
+      {mod.materials.length > 0 && mod.questions.length === 0 && (
+        <div className="rounded-md border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+          Once materials are added, head to the{" "}
+          <button
+            onClick={onGoToAssessment}
+            className="font-medium text-foreground underline underline-offset-2"
+          >
+            Assessment
+          </button>{" "}
+          sub-tab to write the knowledge check.
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* -------- Assessment sub-tab -------- */
+function AssessmentSubTab({
+  mod,
+  onChange,
+}: {
+  mod: TrainingModule;
+  onChange: (next: TrainingModule) => void;
+}) {
+  function updateQuestion(qid: string, patch: Partial<import("../lib/mock-data").AssessmentQuestion>) {
+    onChange({
+      ...mod,
+      questions: mod.questions.map((q) => (q.id === qid ? { ...q, ...patch } : q)),
+    });
+  }
+  function updateOption(qid: string, oid: string, text: string) {
+    onChange({
+      ...mod,
+      questions: mod.questions.map((q) =>
+        q.id === qid ? { ...q, options: q.options.map((o) => (o.id === oid ? { ...o, text } : o)) } : q,
+      ),
+    });
+  }
+  function removeQuestion(qid: string) {
+    onChange({ ...mod, questions: mod.questions.filter((q) => q.id !== qid) });
+  }
+  function addQuestion() {
+    const qid = `q_${Date.now()}`;
+    const newQ = {
+      id: qid,
+      text: "",
+      options: [
+        { id: "o1", text: "" },
+        { id: "o2", text: "" },
+        { id: "o3", text: "" },
+        { id: "o4", text: "" },
+      ],
+      correctOptionId: "o1",
+    };
+    onChange({ ...mod, questions: [...mod.questions, newQ] });
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-lg border border-border bg-card p-4">
+        <p className="text-sm font-medium text-foreground">Scoring for this module</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          Applies only to <span className="font-medium text-foreground">{mod.title}</span>, not other modules.
+        </p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className={labelCls}>Passing score (%)</label>
+            <input
+              type="number"
+              min={0}
+              max={100}
+              value={mod.passingScore}
+              onChange={(e) => onChange({ ...mod, passingScore: Number(e.target.value) })}
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Max attempts</label>
+            <input
+              type="number"
+              min={1}
+              value={mod.maxAttempts}
+              onChange={(e) => onChange({ ...mod, maxAttempts: Number(e.target.value) })}
+              className={inputCls}
+            />
+          </div>
+        </div>
+      </div>
+
+      {mod.questions.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-border bg-card p-10 text-center">
+          <p className="text-sm font-medium text-foreground">No assessment questions yet</p>
+          <p className="mx-auto mt-1.5 max-w-md text-sm text-muted-foreground">
+            Add at least one multiple-choice question so collectors can prove they understood the materials.
+          </p>
+          <div className="mt-5 flex justify-center">
+            <button className={btnPrimary} onClick={addQuestion}>
+              + Add first question
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="space-y-4">
+            {mod.questions.map((q, i) => (
+              <div key={q.id} className="rounded-lg border border-border bg-card p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Question {i + 1}
+                  </p>
+                  <button
+                    onClick={() => removeQuestion(q.id)}
+                    className="text-xs font-medium text-muted-foreground hover:text-foreground"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <textarea
+                  value={q.text}
+                  onChange={(e) => updateQuestion(q.id, { text: e.target.value })}
+                  placeholder="Type the question…"
+                  rows={2}
+                  className={`${inputCls} mt-2 resize-none`}
+                />
+                <div className="mt-3 space-y-2">
+                  {q.options.map((o) => {
+                    const isCorrect = o.id === q.correctOptionId;
+                    return (
+                      <div
+                        key={o.id}
+                        className={`flex items-center gap-3 rounded-md border px-3 py-2 ${
+                          isCorrect ? "border-emerald-300 bg-emerald-50/60" : "border-border bg-background"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name={`correct-${q.id}`}
+                          checked={isCorrect}
+                          onChange={() => updateQuestion(q.id, { correctOptionId: o.id })}
+                          aria-label="Mark as correct"
+                          className="h-4 w-4"
+                        />
+                        <input
+                          value={o.text}
+                          onChange={(e) => updateOption(q.id, o.id, e.target.value)}
+                          placeholder="Answer option…"
+                          className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+                        />
+                        {isCorrect && (
+                          <span className="shrink-0 rounded-md bg-emerald-600/10 px-1.5 py-0.5 text-xs font-medium text-emerald-700">
+                            Marked as correct
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <button
+              onClick={addQuestion}
+              className="text-sm font-medium text-muted-foreground underline underline-offset-2 hover:text-foreground"
+            >
+              + Add question
+            </button>
+            <button className={btnPrimary}>Save assessment</button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* -------- Collector progress sub-tab -------- */
+function progressTone(status: import("../lib/mock-data").AssessmentStatus): import("../lib/mock-data").BadgeTone {
+  if (status === "passed") return "success";
+  if (status === "failed") return "warning";
+  if (status === "in progress") return "neutral";
+  return "muted";
+}
+
+function ProgressSubTab({
+  mod,
+  onChange,
+  onAssign,
+}: {
+  mod: TrainingModule;
+  onChange: (next: TrainingModule) => void;
+  onAssign: () => void;
+}) {
+  const [filter, setFilter] = useState<ProgressFilter>("all");
+
+  if (mod.progress.length === 0) {
+    return (
+      <EmptyState
+        title="No collectors assigned yet"
+        description="Assign collectors to this module — they'll appear here as 'not started' until they open the materials."
+        action={
+          <button className={btnPrimary} onClick={onAssign}>
+            Assign collectors
+          </button>
+        }
+      />
+    );
+  }
+
+  const counts: Record<ProgressFilter, number> = {
+    all: mod.progress.length,
+    "not started": mod.progress.filter((p) => p.assessmentStatus === "not attempted" && p.materialsStatus === "not started").length,
+    "in progress": mod.progress.filter((p) => p.assessmentStatus === "in progress").length,
+    passed: mod.progress.filter((p) => p.assessmentStatus === "passed").length,
+    failed: mod.progress.filter((p) => p.assessmentStatus === "failed").length,
+  };
+  const rows = mod.progress.filter((p) => {
+    if (filter === "all") return true;
+    if (filter === "not started") return p.assessmentStatus === "not attempted" && p.materialsStatus === "not started";
+    return p.assessmentStatus === filter;
+  });
+
+  function resetAttempts(cid: string) {
+    onChange({
+      ...mod,
+      progress: mod.progress.map((p) =>
+        p.collectorId === cid
+          ? { ...p, attemptsUsed: 0, assessmentStatus: "not attempted", score: null, lastAttemptAt: null }
+          : p,
+      ),
+    });
+  }
+
+  function nameFor(id: string): string {
+    return allCollectors.find((c) => c.id === id)?.name ?? id;
+  }
+
+  const columns: Column<import("../lib/mock-data").TrainingProgress & { id: string }>[] = [
+    { key: "name", header: "Collector", render: (p) => <span className="font-medium">{nameFor(p.collectorId)}</span> },
+    {
+      key: "materials",
+      header: "Materials",
+      render: (p) => <Badge tone={p.materialsStatus === "viewed" ? "success" : "muted"}>{p.materialsStatus}</Badge>,
+    },
+    {
+      key: "assessment",
+      header: "Assessment",
+      render: (p) => <Badge tone={progressTone(p.assessmentStatus)}>{p.assessmentStatus}</Badge>,
+    },
+    { key: "score", header: "Score", render: (p) => <span className="tabular-nums">{p.score !== null ? `${p.score}%` : "—"}</span> },
+    {
+      key: "attempts",
+      header: "Attempts",
+      render: (p) => (
+        <span className="tabular-nums">
+          {p.attemptsUsed} / {mod.maxAttempts}
+        </span>
+      ),
+    },
+    {
+      key: "last",
+      header: "Last attempt",
+      render: (p) => <span className="text-muted-foreground">{p.lastAttemptAt ?? "—"}</span>,
+    },
+    {
+      key: "action",
+      header: "",
+      render: (p) => (
+        <button
+          onClick={() => resetAttempts(p.collectorId)}
+          disabled={p.attemptsUsed === 0}
+          className="text-xs font-medium text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Reset attempts
+        </button>
+      ),
+    },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Tabs<ProgressFilter>
+          value={filter}
+          onChange={setFilter}
+          tabs={[
+            { id: "all", label: "All", count: counts.all },
+            { id: "not started", label: "Not started", count: counts["not started"] },
+            { id: "in progress", label: "In progress", count: counts["in progress"] },
+            { id: "passed", label: "Passed", count: counts.passed },
+            { id: "failed", label: "Failed", count: counts.failed },
+          ]}
+        />
+        <button className={btnSecondary} onClick={onAssign}>
+          Assign collectors
+        </button>
+      </div>
+      <DataTable
+        columns={columns}
+        rows={rows.map((p) => ({ ...p, id: p.collectorId }))}
+        empty={<EmptyState title="No collectors match this status" />}
+      />
+    </div>
+  );
+}
+
+/* -------- Assign collectors modal -------- */
+function AssignCollectorsModal({
+  open,
+  onClose,
+  alreadyAssigned,
+  onAssign,
+}: {
+  open: boolean;
+  onClose: () => void;
+  alreadyAssigned: Set<string>;
+  onAssign: (ids: string[]) => void;
+}) {
+  const [search, setSearch] = useState("");
+  const [values, setValues] = useState<Record<string, string[]>>({});
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const groups: FilterGroup[] = [
+    { key: "country", label: "Country", options: countryOptions() },
+    { key: "language", label: "Language", options: languageOptions() },
+    { key: "status", label: "Status", options: ["active", "invited", "inactive"] },
+  ];
+
+  const filtered = useMemo(() => {
+    return allCollectors.filter((c) => {
+      if (search && !`${c.name} ${c.email}`.toLowerCase().includes(search.toLowerCase())) return false;
+      for (const g of groups) {
+        const v = values[g.key];
+        if (v && v.length && !v.includes((c as unknown as Record<string, string>)[g.key])) return false;
+      }
+      return true;
+    });
+  }, [search, values]);
+
+  function toggleRow(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+  function toggleAll() {
+    const selectable = filtered.filter((c) => !alreadyAssigned.has(c.id)).map((c) => c.id);
+    setSelected((prev) => (prev.size === selectable.length ? new Set() : new Set(selectable)));
+  }
+
+  const columns: Column<Collector>[] = [
+    { key: "name", header: "Name", render: (c) => <span className="font-medium">{c.name}</span> },
+    { key: "country", header: "Country", render: (c) => c.country },
+    { key: "language", header: "Language", render: (c) => c.language },
+    {
+      key: "state",
+      header: "State",
+      render: (c) =>
+        alreadyAssigned.has(c.id) ? (
+          <Badge tone="muted">Already assigned</Badge>
+        ) : (
+          <StatusBadge status={c.status} />
+        ),
+    },
+  ];
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Assign collectors to this module"
+      size="lg"
+      footer={
+        <>
+          <button className={btnSecondary} onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            className={btnPrimary}
+            disabled={selected.size === 0}
+            onClick={() => {
+              onAssign(Array.from(selected));
+              setSelected(new Set());
+            }}
+          >
+            Assign {selected.size > 0 ? `(${selected.size})` : ""}
+          </button>
+        </>
+      }
+    >
+      <div className="flex gap-5">
+        <FilterPanel
+          groups={groups}
+          values={values}
+          onChange={(k, v) => setValues((prev) => ({ ...prev, [k]: v }))}
+          search={search}
+          onSearchChange={setSearch}
+          onClear={() => {
+            setValues({});
+            setSearch("");
+          }}
+        />
+        <div className="min-w-0 flex-1">
+          <p className="mb-3 text-xs text-muted-foreground">
+            {filtered.length} matching · {selected.size} selected
+          </p>
+          <DataTable
+            columns={columns}
+            rows={filtered}
+            selectable
+            selectedIds={selected}
+            onToggleRow={(id) => {
+              if (alreadyAssigned.has(id)) return;
+              toggleRow(id);
+            }}
+            onToggleAll={toggleAll}
+            rowClassName={(c) => (alreadyAssigned.has(c.id) ? "opacity-60" : "")}
+            empty={<EmptyState title="No collectors match these filters" />}
+          />
+        </div>
+      </div>
+    </Modal>
   );
 }
 
