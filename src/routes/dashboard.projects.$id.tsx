@@ -1365,7 +1365,7 @@ function AssignCollectorsModal({
       if (search && !`${c.name} ${c.email}`.toLowerCase().includes(search.toLowerCase())) return false;
       for (const g of groups) {
         const v = values[g.key];
-        if (v && v.length && !v.includes((c as Record<string, unknown>)[g.key] as string)) return false;
+        if (v && v.length && !v.includes((c as unknown as Record<string, string>)[g.key])) return false;
       }
       return true;
     });
