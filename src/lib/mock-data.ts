@@ -399,7 +399,33 @@ export const projects: Project[] = [
       },
     ],
     training: [
-      { id: "t4", title: "Post-harvest loss protocol", format: "PDF", addedOn: "2026-06-20", completions: 2, assigned: 2 },
+      {
+        id: "t4",
+        title: "Post-harvest loss protocol",
+        addedOn: "2026-06-20",
+        passingScore: 80,
+        maxAttempts: 3,
+        materials: [
+          { id: "mat5", filename: "post-harvest-guide.pdf", type: "PDF", uploadedOn: "2026-06-20" },
+        ],
+        questions: [
+          {
+            id: "q1",
+            text: "How should crop loss be estimated when the farmer is unsure?",
+            options: [
+              { id: "o1", text: "Enter zero" },
+              { id: "o2", text: "Use the visual reference chart in section 3" },
+              { id: "o3", text: "Skip the question" },
+              { id: "o4", text: "Ask the neighbor instead" },
+            ],
+            correctOptionId: "o2",
+          },
+        ],
+        progress: [
+          { collectorId: "c10", materialsStatus: "viewed", assessmentStatus: "passed", score: 100, attemptsUsed: 1, lastAttemptAt: "2026-06-22 10:00" },
+          { collectorId: "c11", materialsStatus: "viewed", assessmentStatus: "passed", score: 100, attemptsUsed: 1, lastAttemptAt: "2026-06-22 11:30" },
+        ],
+      },
     ],
     messages: [],
   },
