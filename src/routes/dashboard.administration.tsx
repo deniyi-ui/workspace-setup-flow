@@ -51,19 +51,20 @@ function scopeLabel(scope: AdminScope): string {
 }
 
 // ---------- Roles/permissions matrix ----------
-type Cap = { label: string; owner: boolean; admin: boolean; qc: boolean; viewer: boolean };
-const CAPABILITIES: Cap[] = [
-  { label: "Org profile and billing",             owner: true,  admin: false, qc: false, viewer: false },
-  { label: "Invite or remove admins",             owner: true,  admin: true,  qc: false, viewer: false },
-  { label: "Connect and manage integrations",     owner: true,  admin: true,  qc: false, viewer: false },
-  { label: "Create and edit projects",            owner: true,  admin: true,  qc: false, viewer: false },
-  { label: "Manage data collector repository",    owner: true,  admin: true,  qc: false, viewer: false },
-  { label: "Assign collectors to projects",       owner: true,  admin: true,  qc: false, viewer: false },
-  { label: "Review, approve or reject submissions", owner: true, admin: true, qc: true,  viewer: false },
-  { label: "View submissions and analytics",      owner: true,  admin: true,  qc: true,  viewer: true  },
-  { label: "Upload and manage training modules",  owner: true,  admin: true,  qc: false, viewer: false },
-  { label: "Send messages to collectors",         owner: true,  admin: true,  qc: false, viewer: false },
-  { label: "View org-wide reports",               owner: true,  admin: true,  qc: true,  viewer: true  },
+type RoleKey = "admin" | "qc" | "viewer";
+type Cap = { label: string; admin: boolean; qc: boolean; viewer: boolean };
+const INITIAL_CAPABILITIES: Cap[] = [
+  { label: "Org profile and billing",               admin: false, qc: false, viewer: false },
+  { label: "Invite or remove admins",               admin: true,  qc: false, viewer: false },
+  { label: "Connect and manage integrations",       admin: true,  qc: false, viewer: false },
+  { label: "Create and edit projects",              admin: true,  qc: false, viewer: false },
+  { label: "Manage data collector repository",      admin: true,  qc: false, viewer: false },
+  { label: "Assign collectors to projects",         admin: true,  qc: false, viewer: false },
+  { label: "Review, approve or reject submissions", admin: true,  qc: true,  viewer: false },
+  { label: "View submissions and analytics",        admin: true,  qc: true,  viewer: true  },
+  { label: "Upload and manage training modules",    admin: true,  qc: false, viewer: false },
+  { label: "Send messages to collectors",           admin: true,  qc: false, viewer: false },
+  { label: "View org-wide reports",                 admin: true,  qc: true,  viewer: true  },
 ];
 
 // ---------- Page ----------
