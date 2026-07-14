@@ -51,19 +51,20 @@ function scopeLabel(scope: AdminScope): string {
 }
 
 // ---------- Roles/permissions matrix ----------
-type Cap = { label: string; owner: boolean; admin: boolean; qc: boolean; viewer: boolean };
-const CAPABILITIES: Cap[] = [
-  { label: "Org profile and billing",             owner: true,  admin: false, qc: false, viewer: false },
-  { label: "Invite or remove admins",             owner: true,  admin: true,  qc: false, viewer: false },
-  { label: "Connect and manage integrations",     owner: true,  admin: true,  qc: false, viewer: false },
-  { label: "Create and edit projects",            owner: true,  admin: true,  qc: false, viewer: false },
-  { label: "Manage data collector repository",    owner: true,  admin: true,  qc: false, viewer: false },
-  { label: "Assign collectors to projects",       owner: true,  admin: true,  qc: false, viewer: false },
-  { label: "Review, approve or reject submissions", owner: true, admin: true, qc: true,  viewer: false },
-  { label: "View submissions and analytics",      owner: true,  admin: true,  qc: true,  viewer: true  },
-  { label: "Upload and manage training modules",  owner: true,  admin: true,  qc: false, viewer: false },
-  { label: "Send messages to collectors",         owner: true,  admin: true,  qc: false, viewer: false },
-  { label: "View org-wide reports",               owner: true,  admin: true,  qc: true,  viewer: true  },
+type RoleKey = "admin" | "qc" | "viewer";
+type Cap = { label: string; admin: boolean; qc: boolean; viewer: boolean };
+const INITIAL_CAPABILITIES: Cap[] = [
+  { label: "Org profile and billing",               admin: false, qc: false, viewer: false },
+  { label: "Invite or remove admins",               admin: true,  qc: false, viewer: false },
+  { label: "Connect and manage integrations",       admin: true,  qc: false, viewer: false },
+  { label: "Create and edit projects",              admin: true,  qc: false, viewer: false },
+  { label: "Manage data collector repository",      admin: true,  qc: false, viewer: false },
+  { label: "Assign collectors to projects",         admin: true,  qc: false, viewer: false },
+  { label: "Review, approve or reject submissions", admin: true,  qc: true,  viewer: false },
+  { label: "View submissions and analytics",        admin: true,  qc: true,  viewer: true  },
+  { label: "Upload and manage training modules",    admin: true,  qc: false, viewer: false },
+  { label: "Send messages to collectors",           admin: true,  qc: false, viewer: false },
+  { label: "View org-wide reports",                 admin: true,  qc: true,  viewer: true  },
 ];
 
 // ---------- Page ----------
@@ -76,6 +77,15 @@ function AdminPage() {
   const [roleFilter, setRoleFilter] = useState<AdminRole | "all">("all");
   const [panel, setPanel] = useState<PanelMode>({ kind: "closed" });
   const [confirmRemove, setConfirmRemove] = useState<Admin | null>(null);
+  const [capabilities, setCapabilities] = useState<Cap[]>(INITIAL_CAPABILITIES);
+  const [permsEditing, setPermsEditing] = useState(false);
+  const [permsDraft, setPermsDraft] = useState<Cap[]>(INITIAL_CAPABILITIES);
+
+  function toggleDraft(idx: number, role: RoleKey) {
+    setPermsDraft((prev) =>
+      prev.map((c, i) => (i === idx ? { ...c, [role]: !c[role] } : c))
+    );
+  }
 
   const visibleRows = useMemo(() => {
     const base = previewEmpty ? rows.filter((r) => r.role === "owner") : rows;
@@ -212,9 +222,54 @@ function AdminPage() {
         <DataTable columns={columns} rows={visibleRows} />
       )}
 
-      {/* Roles and permissions reference */}
+      {/* Roles and permissions — editable */}
       <section className="mt-10">
-        <h2 className="mb-3 text-sm font-medium text-foreground">Roles and permissions</h2>
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-medium text-foreground">Roles and permissions</h2>
+            <p className="text-xs text-muted-foreground">
+              Adjust what each role can do. Owner always has full access. Custom roles aren't supported.
+            </p>
+          </div>
+          {permsEditing ? (
+            <div className="flex items-center gap-2">
+              <button
+                className={btnSecondary}
+                onClick={() => {
+                  setPermsDraft(capabilities);
+                  setPermsEditing(false);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className={btnSecondary}
+                onClick={() => setPermsDraft(INITIAL_CAPABILITIES)}
+              >
+                Reset to defaults
+              </button>
+              <button
+                className={btnPrimary}
+                onClick={() => {
+                  setCapabilities(permsDraft);
+                  setPermsEditing(false);
+                }}
+              >
+                Save changes
+              </button>
+            </div>
+          ) : (
+            <button
+              className={btnSecondary}
+              onClick={() => {
+                setPermsDraft(capabilities);
+                setPermsEditing(true);
+              }}
+            >
+              Edit permissions
+            </button>
+          )}
+        </div>
         <div className="overflow-hidden rounded-lg border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="border-b border-border bg-muted/40">
@@ -227,21 +282,18 @@ function AdminPage() {
               </tr>
             </thead>
             <tbody>
-              {CAPABILITIES.map((c) => (
+              {(permsEditing ? permsDraft : capabilities).map((c, idx) => (
                 <tr key={c.label} className="border-b border-border last:border-0">
                   <td className="px-4 py-2.5 text-foreground">{c.label}</td>
-                  <Cell on={c.owner} />
-                  <Cell on={c.admin} />
-                  <Cell on={c.qc} />
-                  <Cell on={c.viewer} />
+                  <Cell on={true} />
+                  <EditableCell on={c.admin} editing={permsEditing} onToggle={() => toggleDraft(idx, "admin")} />
+                  <EditableCell on={c.qc} editing={permsEditing} onToggle={() => toggleDraft(idx, "qc")} />
+                  <EditableCell on={c.viewer} editing={permsEditing} onToggle={() => toggleDraft(idx, "viewer")} />
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Role definitions are fixed in this version. Custom roles are on the roadmap.
-        </p>
       </section>
 
       {/* Side panels */}
@@ -314,6 +366,31 @@ function Cell({ on }: { on: boolean }) {
       ) : (
         <span className="text-muted-foreground" aria-label="not allowed">—</span>
       )}
+    </td>
+  );
+}
+
+function EditableCell({
+  on,
+  editing,
+  onToggle,
+}: {
+  on: boolean;
+  editing: boolean;
+  onToggle: () => void;
+}) {
+  if (!editing) return <Cell on={on} />;
+  return (
+    <td className="px-4 py-2.5">
+      <label className="inline-flex cursor-pointer items-center">
+        <input
+          type="checkbox"
+          checked={on}
+          onChange={onToggle}
+          className="h-4 w-4 rounded border-input"
+          aria-label={on ? "allowed" : "not allowed"}
+        />
+      </label>
     </td>
   );
 }
