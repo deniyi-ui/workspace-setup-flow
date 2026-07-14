@@ -126,11 +126,16 @@ export interface Integration {
 }
 
 export const admins: Admin[] = [
-  { id: "a1", name: "Amara Okonkwo", email: "amara@relief-hq.org", role: "owner", addedOn: "2026-03-04", status: "active" },
-  { id: "a2", name: "Daniel Weiss", email: "d.weiss@relief-hq.org", role: "admin", addedOn: "2026-03-11", status: "active" },
-  { id: "a3", name: "Priya Nair", email: "priya.n@relief-hq.org", role: "admin", addedOn: "2026-04-02", status: "active" },
-  { id: "a4", name: "Kwame Boateng", email: "k.boateng@relief-hq.org", role: "admin", addedOn: "2026-06-19", status: "invited" },
+  { id: "a1", name: "Amara Okonkwo", email: "amara@relief-hq.org", role: "owner", scope: { type: "all" }, addedOn: "2026-03-04", status: "active" },
+  { id: "a2", name: "Daniel Weiss", email: "d.weiss@relief-hq.org", role: "admin", scope: { type: "all" }, addedOn: "2026-03-11", status: "active" },
+  { id: "a3", name: "Priya Nair", email: "priya.n@relief-hq.org", role: "admin", scope: { type: "all" }, addedOn: "2026-04-02", status: "active" },
+  { id: "a4", name: "Kwame Boateng", email: "k.boateng@relief-hq.org", role: "admin", scope: { type: "all" }, addedOn: "2026-06-19", status: "invited" },
+  { id: "a5", name: "Leila Haddad", email: "l.haddad@wash-alliance.org", role: "qc_reviewer", scope: { type: "specific", projectIds: ["p1"] }, addedOn: "2026-05-14", status: "active" },
+  { id: "a6", name: "Tom Reyes", email: "tom.r@relief-hq.org", role: "qc_reviewer", scope: { type: "all" }, addedOn: "2026-05-22", status: "active" },
+  { id: "a7", name: "Sofia Marín", email: "sofia@fundacion-agua.org", role: "viewer", scope: { type: "specific", projectIds: ["p1"] }, addedOn: "2026-06-08", status: "active" },
+  { id: "a8", name: "Henry Osei", email: "h.osei@donorfund.org", role: "viewer", scope: { type: "specific", projectIds: ["p2", "p4"] }, addedOn: "2026-06-25", status: "invited" },
 ];
+
 
 export const collectors: Collector[] = [
   { id: "c1", name: "Aisha Bello", email: "aisha.bello@fieldwork.ng", country: "Nigeria", gender: "female", religion: "Muslim", education: "tertiary", language: "Hausa", status: "active", projectCount: 3, phone: "+234 803 555 1122", joinedOn: "2025-11-04" },
