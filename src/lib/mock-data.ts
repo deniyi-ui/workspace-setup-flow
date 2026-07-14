@@ -5,14 +5,22 @@ import type { PlatformId } from "./onboarding";
 
 export type BadgeTone = "neutral" | "success" | "warning" | "muted" | "danger";
 
+export type AdminRole = "owner" | "admin" | "qc_reviewer" | "viewer";
+
+export type AdminScope =
+  | { type: "all" }
+  | { type: "specific"; projectIds: string[] };
+
 export interface Admin {
   id: string;
   name: string;
   email: string;
-  role: "owner" | "admin";
+  role: AdminRole;
+  scope: AdminScope;
   addedOn: string;
   status: "active" | "invited";
 }
+
 
 export interface Collector {
   id: string;
