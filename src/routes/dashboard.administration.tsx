@@ -222,9 +222,54 @@ function AdminPage() {
         <DataTable columns={columns} rows={visibleRows} />
       )}
 
-      {/* Roles and permissions reference */}
+      {/* Roles and permissions — editable */}
       <section className="mt-10">
-        <h2 className="mb-3 text-sm font-medium text-foreground">Roles and permissions</h2>
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-medium text-foreground">Roles and permissions</h2>
+            <p className="text-xs text-muted-foreground">
+              Adjust what each role can do. Owner always has full access. Custom roles aren't supported.
+            </p>
+          </div>
+          {permsEditing ? (
+            <div className="flex items-center gap-2">
+              <button
+                className={btnSecondary}
+                onClick={() => {
+                  setPermsDraft(capabilities);
+                  setPermsEditing(false);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className={btnSecondary}
+                onClick={() => setPermsDraft(INITIAL_CAPABILITIES)}
+              >
+                Reset to defaults
+              </button>
+              <button
+                className={btnPrimary}
+                onClick={() => {
+                  setCapabilities(permsDraft);
+                  setPermsEditing(false);
+                }}
+              >
+                Save changes
+              </button>
+            </div>
+          ) : (
+            <button
+              className={btnSecondary}
+              onClick={() => {
+                setPermsDraft(capabilities);
+                setPermsEditing(true);
+              }}
+            >
+              Edit permissions
+            </button>
+          )}
+        </div>
         <div className="overflow-hidden rounded-lg border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="border-b border-border bg-muted/40">
@@ -237,21 +282,18 @@ function AdminPage() {
               </tr>
             </thead>
             <tbody>
-              {CAPABILITIES.map((c) => (
+              {(permsEditing ? permsDraft : capabilities).map((c, idx) => (
                 <tr key={c.label} className="border-b border-border last:border-0">
                   <td className="px-4 py-2.5 text-foreground">{c.label}</td>
-                  <Cell on={c.owner} />
-                  <Cell on={c.admin} />
-                  <Cell on={c.qc} />
-                  <Cell on={c.viewer} />
+                  <Cell on={true} />
+                  <EditableCell on={c.admin} editing={permsEditing} onToggle={() => toggleDraft(idx, "admin")} />
+                  <EditableCell on={c.qc} editing={permsEditing} onToggle={() => toggleDraft(idx, "qc")} />
+                  <EditableCell on={c.viewer} editing={permsEditing} onToggle={() => toggleDraft(idx, "viewer")} />
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Role definitions are fixed in this version. Custom roles are on the roadmap.
-        </p>
       </section>
 
       {/* Side panels */}
