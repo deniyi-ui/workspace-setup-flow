@@ -77,6 +77,15 @@ function AdminPage() {
   const [roleFilter, setRoleFilter] = useState<AdminRole | "all">("all");
   const [panel, setPanel] = useState<PanelMode>({ kind: "closed" });
   const [confirmRemove, setConfirmRemove] = useState<Admin | null>(null);
+  const [capabilities, setCapabilities] = useState<Cap[]>(INITIAL_CAPABILITIES);
+  const [permsEditing, setPermsEditing] = useState(false);
+  const [permsDraft, setPermsDraft] = useState<Cap[]>(INITIAL_CAPABILITIES);
+
+  function toggleDraft(idx: number, role: RoleKey) {
+    setPermsDraft((prev) =>
+      prev.map((c, i) => (i === idx ? { ...c, [role]: !c[role] } : c))
+    );
+  }
 
   const visibleRows = useMemo(() => {
     const base = previewEmpty ? rows.filter((r) => r.role === "owner") : rows;
