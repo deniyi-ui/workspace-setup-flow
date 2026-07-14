@@ -370,6 +370,31 @@ function Cell({ on }: { on: boolean }) {
   );
 }
 
+function EditableCell({
+  on,
+  editing,
+  onToggle,
+}: {
+  on: boolean;
+  editing: boolean;
+  onToggle: () => void;
+}) {
+  if (!editing) return <Cell on={on} />;
+  return (
+    <td className="px-4 py-2.5">
+      <label className="inline-flex cursor-pointer items-center">
+        <input
+          type="checkbox"
+          checked={on}
+          onChange={onToggle}
+          className="h-4 w-4 rounded border-input"
+          aria-label={on ? "allowed" : "not allowed"}
+        />
+      </label>
+    </td>
+  );
+}
+
 // ---------- Invite panel ----------
 type InvitablePanelRole = Exclude<AdminRole, "owner">;
 
