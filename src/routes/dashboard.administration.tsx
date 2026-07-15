@@ -613,7 +613,7 @@ function PanelForm({
     );
   }
 
-  const hasProjects = false;
+  const hasProjects = allProjects.length > 0;
 
   return (
     <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
