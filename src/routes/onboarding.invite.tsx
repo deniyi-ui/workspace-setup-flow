@@ -15,12 +15,9 @@ export const Route = createFileRoute("/onboarding/invite")({
   component: InviteStep,
 });
 
-type InviteRole = "owner" | "admin";
-
 interface InviteRow {
   id: number;
   email: string;
-  role: InviteRole;
 }
 
 function isValidEmail(v: string) {
@@ -32,8 +29,8 @@ let nextId = 3;
 function InviteStep() {
   const navigate = useNavigate();
   const [rows, setRows] = useState<InviteRow[]>([
-    { id: 1, email: "", role: "admin" },
-    { id: 2, email: "", role: "admin" },
+    { id: 1, email: "" },
+    { id: 2, email: "" },
   ]);
 
   const filled = rows.filter((r) => r.email.trim().length > 0);
@@ -48,7 +45,7 @@ function InviteStep() {
   }
 
   function addRow() {
-    setRows((rs) => [...rs, { id: nextId++, email: "", role: "admin" }]);
+    setRows((rs) => [...rs, { id: nextId++, email: "" }]);
   }
 
   function sendInvites() {
@@ -58,11 +55,12 @@ function InviteStep() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-        Invite admins
-      </h1>
+      <h1 className="text-2xl font-semibold tracking-tight text-foreground">Invite admins</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         Working solo for now? That's fine — you can invite people later.
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Invited as admins — you can add reviewers or viewers later, once you have a project.
       </p>
 
       <div className="mt-10 space-y-3">
@@ -78,15 +76,6 @@ function InviteStep() {
                 placeholder="colleague@organization.org"
               />
             </div>
-            <select
-              aria-label="Role"
-              className="block w-28 rounded-md border border-input bg-card px-2.5 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              value={row.role}
-              onChange={(e) => update(row.id, { role: e.target.value as InviteRole })}
-            >
-              <option value="owner">Owner</option>
-              <option value="admin">Admin</option>
-            </select>
             <button
               onClick={() => remove(row.id)}
               aria-label="Remove invite"
@@ -112,15 +101,6 @@ function InviteStep() {
       >
         + Add another
       </button>
-
-      <div className="mt-8 rounded-lg border border-border bg-card p-4 text-xs leading-relaxed text-muted-foreground">
-        <p>
-          <span className="font-medium text-foreground">Owners</span> can manage billing
-          and delete the organization.{" "}
-          <span className="font-medium text-foreground">Admins</span> have full
-          operational rights — projects, teams, integrations, and quality settings.
-        </p>
-      </div>
 
       <div className="mt-10 flex items-center gap-3">
         <button className={btnPrimary} onClick={sendInvites} disabled={!allFilledValid}>

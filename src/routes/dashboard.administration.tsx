@@ -34,7 +34,9 @@ const ROLE_BADGE: Record<AdminRole, string> = {
 
 function RoleBadge({ role }: { role: AdminRole }) {
   return (
-    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${ROLE_BADGE[role]}`}>
+    <span
+      className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${ROLE_BADGE[role]}`}
+    >
       {ROLE_LABEL[role]}
     </span>
   );
@@ -54,17 +56,17 @@ function scopeLabel(scope: AdminScope): string {
 type RoleKey = "admin" | "qc" | "viewer";
 type Cap = { label: string; admin: boolean; qc: boolean; viewer: boolean };
 const INITIAL_CAPABILITIES: Cap[] = [
-  { label: "Org profile and billing",               admin: false, qc: false, viewer: false },
-  { label: "Invite or remove admins",               admin: true,  qc: false, viewer: false },
-  { label: "Connect and manage integrations",       admin: true,  qc: false, viewer: false },
-  { label: "Create and edit projects",              admin: true,  qc: false, viewer: false },
-  { label: "Manage data collector repository",      admin: true,  qc: false, viewer: false },
-  { label: "Assign collectors to projects",         admin: true,  qc: false, viewer: false },
-  { label: "Review, approve or reject submissions", admin: true,  qc: true,  viewer: false },
-  { label: "View submissions and analytics",        admin: true,  qc: true,  viewer: true  },
-  { label: "Upload and manage training modules",    admin: true,  qc: false, viewer: false },
-  { label: "Send messages to collectors",           admin: true,  qc: false, viewer: false },
-  { label: "View org-wide reports",                 admin: true,  qc: true,  viewer: true  },
+  { label: "Org profile and billing", admin: false, qc: false, viewer: false },
+  { label: "Invite or remove admins", admin: true, qc: false, viewer: false },
+  { label: "Connect and manage integrations", admin: true, qc: false, viewer: false },
+  { label: "Create and edit projects", admin: true, qc: false, viewer: false },
+  { label: "Manage data collector repository", admin: true, qc: false, viewer: false },
+  { label: "Assign collectors to projects", admin: true, qc: false, viewer: false },
+  { label: "Review, approve or reject submissions", admin: true, qc: true, viewer: false },
+  { label: "View submissions and analytics", admin: true, qc: true, viewer: true },
+  { label: "Upload and manage training modules", admin: true, qc: false, viewer: false },
+  { label: "Send messages to collectors", admin: true, qc: false, viewer: false },
+  { label: "View org-wide reports", admin: true, qc: true, viewer: true },
 ];
 
 // ---------- Page ----------
@@ -82,9 +84,7 @@ function AdminPage() {
   const [permsDraft, setPermsDraft] = useState<Cap[]>(INITIAL_CAPABILITIES);
 
   function toggleDraft(idx: number, role: RoleKey) {
-    setPermsDraft((prev) =>
-      prev.map((c, i) => (i === idx ? { ...c, [role]: !c[role] } : c))
-    );
+    setPermsDraft((prev) => prev.map((c, i) => (i === idx ? { ...c, [role]: !c[role] } : c)));
   }
 
   const visibleRows = useMemo(() => {
@@ -131,13 +131,7 @@ function AdminPage() {
       key: "scope",
       header: "Project access",
       render: (a) => (
-        <span
-          className={
-            a.scope.type === "all"
-              ? "text-foreground"
-              : "text-foreground"
-          }
-        >
+        <span className={a.scope.type === "all" ? "text-foreground" : "text-foreground"}>
           {scopeLabel(a.scope)}
         </span>
       ),
@@ -210,7 +204,8 @@ function AdminPage() {
         <div className="rounded-lg border border-dashed border-border p-12 text-center">
           <p className="text-sm font-medium text-foreground">Only you have access so far</p>
           <p className="mx-auto mt-1.5 max-w-md text-sm text-muted-foreground">
-            Invite teammates, external QC reviewers, or funders to give them role-based access to this workspace.
+            Invite teammates, external QC reviewers, or funders to give them role-based access to
+            this workspace.
           </p>
           <div className="mt-5">
             <button className={btnPrimary} onClick={() => setPanel({ kind: "invite" })}>
@@ -228,7 +223,8 @@ function AdminPage() {
           <div>
             <h2 className="text-sm font-medium text-foreground">Roles and permissions</h2>
             <p className="text-xs text-muted-foreground">
-              Adjust what each role can do. Owner always has full access. Custom roles aren't supported.
+              Adjust what each role can do. Owner always has full access. Custom roles aren't
+              supported.
             </p>
           </div>
           {permsEditing ? (
@@ -242,10 +238,7 @@ function AdminPage() {
               >
                 Cancel
               </button>
-              <button
-                className={btnSecondary}
-                onClick={() => setPermsDraft(INITIAL_CAPABILITIES)}
-              >
+              <button className={btnSecondary} onClick={() => setPermsDraft(INITIAL_CAPABILITIES)}>
                 Reset to defaults
               </button>
               <button
@@ -275,10 +268,18 @@ function AdminPage() {
             <thead className="border-b border-border bg-muted/40">
               <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="px-4 py-2.5">Capability</th>
-                <th className="px-4 py-2.5"><RoleBadge role="owner" /></th>
-                <th className="px-4 py-2.5"><RoleBadge role="admin" /></th>
-                <th className="px-4 py-2.5"><RoleBadge role="qc_reviewer" /></th>
-                <th className="px-4 py-2.5"><RoleBadge role="viewer" /></th>
+                <th className="px-4 py-2.5">
+                  <RoleBadge role="owner" />
+                </th>
+                <th className="px-4 py-2.5">
+                  <RoleBadge role="admin" />
+                </th>
+                <th className="px-4 py-2.5">
+                  <RoleBadge role="qc_reviewer" />
+                </th>
+                <th className="px-4 py-2.5">
+                  <RoleBadge role="viewer" />
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -286,9 +287,21 @@ function AdminPage() {
                 <tr key={c.label} className="border-b border-border last:border-0">
                   <td className="px-4 py-2.5 text-foreground">{c.label}</td>
                   <Cell on={true} />
-                  <EditableCell on={c.admin} editing={permsEditing} onToggle={() => toggleDraft(idx, "admin")} />
-                  <EditableCell on={c.qc} editing={permsEditing} onToggle={() => toggleDraft(idx, "qc")} />
-                  <EditableCell on={c.viewer} editing={permsEditing} onToggle={() => toggleDraft(idx, "viewer")} />
+                  <EditableCell
+                    on={c.admin}
+                    editing={permsEditing}
+                    onToggle={() => toggleDraft(idx, "admin")}
+                  />
+                  <EditableCell
+                    on={c.qc}
+                    editing={permsEditing}
+                    onToggle={() => toggleDraft(idx, "qc")}
+                  />
+                  <EditableCell
+                    on={c.viewer}
+                    editing={permsEditing}
+                    onToggle={() => toggleDraft(idx, "viewer")}
+                  />
                 </tr>
               ))}
             </tbody>
@@ -331,15 +344,20 @@ function AdminPage() {
       {confirmRemove && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-6">
           <div className="w-full max-w-md rounded-lg border border-border bg-card shadow-lg">
-            <div className="border-b border-border px-5 py-3 text-sm font-semibold">Remove access?</div>
+            <div className="border-b border-border px-5 py-3 text-sm font-semibold">
+              Remove access?
+            </div>
             <div className="px-5 py-4 text-sm text-foreground">
               <p>
-                <span className="font-medium">{confirmRemove.name}</span> ({confirmRemove.email}) will lose
-                access to FieldWorkz immediately. This can't be undone, but you can re-invite them later.
+                <span className="font-medium">{confirmRemove.name}</span> ({confirmRemove.email})
+                will lose access to FieldWorkz immediately. This can't be undone, but you can
+                re-invite them later.
               </p>
             </div>
             <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
-              <button className={btnSecondary} onClick={() => setConfirmRemove(null)}>Cancel</button>
+              <button className={btnSecondary} onClick={() => setConfirmRemove(null)}>
+                Cancel
+              </button>
               <button
                 className="inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
                 onClick={() => {
@@ -362,9 +380,13 @@ function Cell({ on }: { on: boolean }) {
   return (
     <td className="px-4 py-2.5">
       {on ? (
-        <span className="text-primary" aria-label="allowed">✓</span>
+        <span className="text-primary" aria-label="allowed">
+          ✓
+        </span>
       ) : (
-        <span className="text-muted-foreground" aria-label="not allowed">—</span>
+        <span className="text-muted-foreground" aria-label="not allowed">
+          —
+        </span>
       )}
     </td>
   );
@@ -410,9 +432,7 @@ function InvitePanel({
   const [scopeType, setScopeType] = useState<"all" | "specific">("all");
   const [projectIds, setProjectIds] = useState<string[]>([]);
 
-  const valid =
-    /.+@.+\..+/.test(email) &&
-    (scopeType === "all" || projectIds.length > 0);
+  const valid = /.+@.+\..+/.test(email) && (scopeType === "all" || projectIds.length > 0);
 
   return (
     <SidePanel title="Invite to workspace" onClose={onClose}>
@@ -427,7 +447,9 @@ function InvitePanel({
         setProjectIds={setProjectIds}
       />
       <PanelFooter>
-        <button className={btnSecondary} onClick={onClose}>Cancel</button>
+        <button className={btnSecondary} onClick={onClose}>
+          Cancel
+        </button>
         <button
           className={btnPrimary}
           disabled={!valid}
@@ -435,10 +457,7 @@ function InvitePanel({
             onSubmit({
               email: email.trim(),
               role,
-              scope:
-                scopeType === "all"
-                  ? { type: "all" }
-                  : { type: "specific", projectIds },
+              scope: scopeType === "all" ? { type: "all" } : { type: "specific", projectIds },
             })
           }
         >
@@ -463,11 +482,11 @@ function ManagePanel({
 }) {
   const [email] = useState(admin.email);
   const [role, setRole] = useState<InvitablePanelRole>(
-    admin.role === "owner" ? "admin" : (admin.role as InvitablePanelRole)
+    admin.role === "owner" ? "admin" : (admin.role as InvitablePanelRole),
   );
   const [scopeType, setScopeType] = useState<"all" | "specific">(admin.scope.type);
   const [projectIds, setProjectIds] = useState<string[]>(
-    admin.scope.type === "specific" ? admin.scope.projectIds : []
+    admin.scope.type === "specific" ? admin.scope.projectIds : [],
   );
 
   const valid = scopeType === "all" || projectIds.length > 0;
@@ -498,7 +517,9 @@ function ManagePanel({
         </button>
       </div>
       <PanelFooter>
-        <button className={btnSecondary} onClick={onClose}>Cancel</button>
+        <button className={btnSecondary} onClick={onClose}>
+          Cancel
+        </button>
         <button
           className={btnPrimary}
           disabled={!valid}
@@ -506,10 +527,7 @@ function ManagePanel({
             onSave({
               ...admin,
               role,
-              scope:
-                scopeType === "all"
-                  ? { type: "all" }
-                  : { type: "specific", projectIds },
+              scope: scopeType === "all" ? { type: "all" } : { type: "specific", projectIds },
             })
           }
         >
@@ -544,7 +562,12 @@ function SidePanel({
             className="rounded p-1 text-muted-foreground hover:text-foreground"
           >
             <svg className="h-4 w-4" viewBox="0 0 16 16" fill="none">
-              <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <path
+                d="M4 4l8 8M12 4l-8 8"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
             </svg>
           </button>
         </div>
@@ -586,9 +609,12 @@ function PanelForm({
 }) {
   function toggleProject(id: string) {
     setProjectIds(
-      projectIds.includes(id) ? projectIds.filter((x) => x !== id) : [...projectIds, id]
+      projectIds.includes(id) ? projectIds.filter((x) => x !== id) : [...projectIds, id],
     );
   }
+
+  const hasProjects = allProjects.length > 0;
+
   return (
     <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
       <div>
@@ -605,29 +631,44 @@ function PanelForm({
       <div>
         <label className={labelCls}>Role</label>
         <div className="mt-1 space-y-2">
-          {(["admin", "qc_reviewer", "viewer"] as InvitablePanelRole[]).map((r) => (
-            <label
-              key={r}
-              className={`flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm transition-colors ${
-                role === r ? "border-primary bg-primary/5" : "border-border hover:bg-muted/40"
-              }`}
-            >
-              <input
-                type="radio"
-                name="role"
-                checked={role === r}
-                onChange={() => setRole(r)}
-                className="mt-0.5 h-4 w-4"
-              />
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <RoleBadge role={r} />
+          {(["admin", "qc_reviewer", "viewer"] as InvitablePanelRole[]).map((r) => {
+            const disabled = !hasProjects && (r === "qc_reviewer" || r === "viewer");
+            return (
+              <label
+                key={r}
+                className={`flex items-start gap-3 rounded-md border p-3 text-sm transition-colors ${
+                  disabled ? "cursor-not-allowed border-border opacity-60" : "cursor-pointer"
+                } ${
+                  role === r && !disabled
+                    ? "border-primary bg-primary/5"
+                    : disabled
+                      ? "border-border"
+                      : "border-border hover:bg-muted/40"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="role"
+                  checked={role === r}
+                  onChange={() => setRole(r)}
+                  disabled={disabled}
+                  className="mt-0.5 h-4 w-4 disabled:cursor-not-allowed"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <RoleBadge role={r} />
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{ROLE_HINT[r]}</p>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">{ROLE_HINT[r]}</p>
-              </div>
-            </label>
-          ))}
+              </label>
+            );
+          })}
         </div>
+        {!hasProjects && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Create a project first to invite reviewers or viewers.
+          </p>
+        )}
         <p className="mt-2 text-xs text-muted-foreground">
           Owner is tied to org creation and transferred separately, not assigned via invite.
         </p>
@@ -639,7 +680,9 @@ function PanelForm({
         <div className="mt-1 space-y-2">
           <label
             className={`flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm transition-colors ${
-              scopeType === "all" ? "border-primary bg-primary/5" : "border-border hover:bg-muted/40"
+              scopeType === "all"
+                ? "border-primary bg-primary/5"
+                : "border-border hover:bg-muted/40"
             }`}
           >
             <input
@@ -659,7 +702,9 @@ function PanelForm({
 
           <label
             className={`flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm transition-colors ${
-              scopeType === "specific" ? "border-primary bg-primary/5" : "border-border hover:bg-muted/40"
+              scopeType === "specific"
+                ? "border-primary bg-primary/5"
+                : "border-border hover:bg-muted/40"
             }`}
           >
             <input
@@ -708,6 +753,7 @@ function PanelForm({
 
 const ROLE_HINT: Record<InvitablePanelRole, string> = {
   admin: "Full operational access: projects, integrations, collectors, training, messaging.",
-  qc_reviewer: "Reviews, approves, or rejects submissions and views analytics. Cannot create or send.",
+  qc_reviewer:
+    "Reviews, approves, or rejects submissions and views analytics. Cannot create or send.",
   viewer: "Read-only access to submissions, analytics, and reports.",
 };
