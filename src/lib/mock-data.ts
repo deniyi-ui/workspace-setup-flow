@@ -235,7 +235,7 @@ const populatedSubs: Submission[] = [
   },
 ];
 
-export const projects: Project[] = [
+export const projects: Project[] = [];
   {
     id: "p1",
     name: "WASH baseline — Nigeria & Kenya",
