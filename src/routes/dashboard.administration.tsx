@@ -589,6 +589,9 @@ function PanelForm({
       projectIds.includes(id) ? projectIds.filter((x) => x !== id) : [...projectIds, id]
     );
   }
+
+  const hasProjects = allProjects.length > 0;
+
   return (
     <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
       <div>
@@ -605,29 +608,40 @@ function PanelForm({
       <div>
         <label className={labelCls}>Role</label>
         <div className="mt-1 space-y-2">
-          {(["admin", "qc_reviewer", "viewer"] as InvitablePanelRole[]).map((r) => (
-            <label
-              key={r}
-              className={`flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm transition-colors ${
-                role === r ? "border-primary bg-primary/5" : "border-border hover:bg-muted/40"
-              }`}
-            >
-              <input
-                type="radio"
-                name="role"
-                checked={role === r}
-                onChange={() => setRole(r)}
-                className="mt-0.5 h-4 w-4"
-              />
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <RoleBadge role={r} />
+          {(["admin", "qc_reviewer", "viewer"] as InvitablePanelRole[]).map((r) => {
+            const disabled = !hasProjects && (r === "qc_reviewer" || r === "viewer");
+            return (
+              <label
+                key={r}
+                className={`flex items-start gap-3 rounded-md border p-3 text-sm transition-colors ${
+                  disabled ? "cursor-not-allowed border-border opacity-60" : "cursor-pointer"
+                } ${
+                  role === r && !disabled ? "border-primary bg-primary/5" : disabled ? "border-border" : "border-border hover:bg-muted/40"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="role"
+                  checked={role === r}
+                  onChange={() => setRole(r)}
+                  disabled={disabled}
+                  className="mt-0.5 h-4 w-4 disabled:cursor-not-allowed"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <RoleBadge role={r} />
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{ROLE_HINT[r]}</p>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">{ROLE_HINT[r]}</p>
-              </div>
-            </label>
-          ))}
+              </label>
+            );
+          })}
         </div>
+        {!hasProjects && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Create a project first to invite reviewers or viewers.
+          </p>
+        )}
         <p className="mt-2 text-xs text-muted-foreground">
           Owner is tied to org creation and transferred separately, not assigned via invite.
         </p>
