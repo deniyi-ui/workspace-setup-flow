@@ -15,12 +15,9 @@ export const Route = createFileRoute("/onboarding/invite")({
   component: InviteStep,
 });
 
-type InviteRole = "owner" | "admin";
-
 interface InviteRow {
   id: number;
   email: string;
-  role: InviteRole;
 }
 
 function isValidEmail(v: string) {
@@ -32,8 +29,8 @@ let nextId = 3;
 function InviteStep() {
   const navigate = useNavigate();
   const [rows, setRows] = useState<InviteRow[]>([
-    { id: 1, email: "", role: "admin" },
-    { id: 2, email: "", role: "admin" },
+    { id: 1, email: "" },
+    { id: 2, email: "" },
   ]);
 
   const filled = rows.filter((r) => r.email.trim().length > 0);
@@ -48,7 +45,7 @@ function InviteStep() {
   }
 
   function addRow() {
-    setRows((rs) => [...rs, { id: nextId++, email: "", role: "admin" }]);
+    setRows((rs) => [...rs, { id: nextId++, email: "" }]);
   }
 
   function sendInvites() {
