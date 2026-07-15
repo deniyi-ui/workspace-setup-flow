@@ -55,9 +55,7 @@ function InviteStep() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-        Invite admins
-      </h1>
+      <h1 className="text-2xl font-semibold tracking-tight text-foreground">Invite admins</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         Working solo for now? That's fine — you can invite people later.
       </p>
