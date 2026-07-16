@@ -23,6 +23,7 @@ import { Route as DashboardProjectsRouteImport } from './routes/dashboard.projec
 import { Route as DashboardMessagingRouteImport } from './routes/dashboard.messaging'
 import { Route as DashboardIntegrationsRouteImport } from './routes/dashboard.integrations'
 import { Route as DashboardCollectorsRouteImport } from './routes/dashboard.collectors'
+import { Route as DashboardAutomationRouteImport } from './routes/dashboard.automation'
 import { Route as DashboardAdministrationRouteImport } from './routes/dashboard.administration'
 import { Route as DashboardProjectsIndexRouteImport } from './routes/dashboard.projects.index'
 import { Route as DashboardCollectorsIndexRouteImport } from './routes/dashboard.collectors.index'
@@ -100,6 +101,11 @@ const DashboardCollectorsRoute = DashboardCollectorsRouteImport.update({
   path: '/collectors',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardAutomationRoute = DashboardAutomationRouteImport.update({
+  id: '/automation',
+  path: '/automation',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardAdministrationRoute = DashboardAdministrationRouteImport.update({
   id: '/administration',
   path: '/administration',
@@ -139,6 +145,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/dashboard/administration': typeof DashboardAdministrationRoute
+  '/dashboard/automation': typeof DashboardAutomationRoute
   '/dashboard/collectors': typeof DashboardCollectorsRouteWithChildren
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
   '/dashboard/messaging': typeof DashboardMessagingRoute
@@ -160,6 +167,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/dashboard/administration': typeof DashboardAdministrationRoute
+  '/dashboard/automation': typeof DashboardAutomationRoute
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
   '/dashboard/messaging': typeof DashboardMessagingRoute
   '/dashboard/reports': typeof DashboardReportsRoute
@@ -181,6 +189,7 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/dashboard/administration': typeof DashboardAdministrationRoute
+  '/dashboard/automation': typeof DashboardAutomationRoute
   '/dashboard/collectors': typeof DashboardCollectorsRouteWithChildren
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
   '/dashboard/messaging': typeof DashboardMessagingRoute
@@ -205,6 +214,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/sitemap.xml'
     | '/dashboard/administration'
+    | '/dashboard/automation'
     | '/dashboard/collectors'
     | '/dashboard/integrations'
     | '/dashboard/messaging'
@@ -226,6 +236,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/sitemap.xml'
     | '/dashboard/administration'
+    | '/dashboard/automation'
     | '/dashboard/integrations'
     | '/dashboard/messaging'
     | '/dashboard/reports'
@@ -246,6 +257,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/sitemap.xml'
     | '/dashboard/administration'
+    | '/dashboard/automation'
     | '/dashboard/collectors'
     | '/dashboard/integrations'
     | '/dashboard/messaging'
@@ -370,6 +382,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardCollectorsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/automation': {
+      id: '/dashboard/automation'
+      path: '/automation'
+      fullPath: '/dashboard/automation'
+      preLoaderRoute: typeof DashboardAutomationRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/administration': {
       id: '/dashboard/administration'
       path: '/administration'
@@ -445,6 +464,7 @@ const DashboardProjectsRouteWithChildren =
 
 interface DashboardRouteChildren {
   DashboardAdministrationRoute: typeof DashboardAdministrationRoute
+  DashboardAutomationRoute: typeof DashboardAutomationRoute
   DashboardCollectorsRoute: typeof DashboardCollectorsRouteWithChildren
   DashboardIntegrationsRoute: typeof DashboardIntegrationsRoute
   DashboardMessagingRoute: typeof DashboardMessagingRoute
@@ -455,6 +475,7 @@ interface DashboardRouteChildren {
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAdministrationRoute: DashboardAdministrationRoute,
+  DashboardAutomationRoute: DashboardAutomationRoute,
   DashboardCollectorsRoute: DashboardCollectorsRouteWithChildren,
   DashboardIntegrationsRoute: DashboardIntegrationsRoute,
   DashboardMessagingRoute: DashboardMessagingRoute,

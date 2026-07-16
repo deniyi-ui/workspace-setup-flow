@@ -15,6 +15,7 @@ const nav: NavItem[] = [
   { to: "/dashboard/messaging", label: "Messaging", icon: <IconMessage /> },
   { to: "/dashboard/reports", label: "Reports", icon: <IconChart /> },
   { to: "/dashboard/integrations", label: "Integrations", icon: <IconPlug /> },
+  { to: "/dashboard/automation", label: "Automation", icon: <IconBolt /> },
   { to: "/dashboard/administration", label: "Administration", icon: <IconShield /> },
 ];
 
@@ -130,6 +131,13 @@ function IconShield() {
   return (
     <svg className="h-4 w-4" viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <path d="M8 2l5 2v4c0 3-2.2 5.2-5 6-2.8-.8-5-3-5-6V4l5-2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function IconBolt() {
+  return (
+    <svg className="h-4 w-4" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M9 1L3 9h4l-1 6 6-8H8l1-6z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
     </svg>
   );
 }
