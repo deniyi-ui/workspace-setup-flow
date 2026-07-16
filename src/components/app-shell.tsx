@@ -15,6 +15,7 @@ const nav: NavItem[] = [
   { to: "/dashboard/messaging", label: "Messaging", icon: <IconMessage /> },
   { to: "/dashboard/reports", label: "Reports", icon: <IconChart /> },
   { to: "/dashboard/integrations", label: "Integrations", icon: <IconPlug /> },
+  { to: "/dashboard/automation", label: "Automation", icon: <IconBolt /> },
   { to: "/dashboard/administration", label: "Administration", icon: <IconShield /> },
 ];
 
