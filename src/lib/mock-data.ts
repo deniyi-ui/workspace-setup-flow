@@ -112,6 +112,9 @@ export interface Project {
   submissions: Submission[];
   training: TrainingModule[];
   messages: ProjectMessage[];
+  targetSubmissions: number;
+  budget: number;
+  costPerSubmission: number;
 }
 
 export interface Integration {
@@ -392,6 +395,9 @@ export const projects: Project[] = [
       { id: "m1", sentAt: "2026-07-08 09:00", channel: ["in-app", "sms"], recipients: 7, preview: "Reminder: submit all Monday visits by 6pm.", delivered: 7, failed: 0 },
       { id: "m2", sentAt: "2026-07-05 14:30", channel: ["push"], recipients: 7, preview: "Training module 3 is now available.", delivered: 6, failed: 1 },
     ],
+    targetSubmissions: 500,
+    budget: 2100,
+    costPerSubmission: 4.20,
   },
   {
     id: "p2",
@@ -441,6 +447,9 @@ export const projects: Project[] = [
       },
     ],
     messages: [],
+    targetSubmissions: 200,
+    budget: 1000,
+    costPerSubmission: 5.00,
   },
   {
     id: "p3",
@@ -454,6 +463,9 @@ export const projects: Project[] = [
     submissions: [],
     training: [],
     messages: [],
+    targetSubmissions: 0,
+    budget: 0,
+    costPerSubmission: 0,
   },
   {
     id: "p4",
@@ -467,6 +479,9 @@ export const projects: Project[] = [
     submissions: [],
     training: [],
     messages: [],
+    targetSubmissions: 150,
+    budget: 750,
+    costPerSubmission: 5.00,
   },
 ];
 

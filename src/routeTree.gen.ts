@@ -9,36 +9,31 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as OnboardingRouteImport } from './routes/onboarding'
-import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
-import { Route as OnboardingStartRouteImport } from './routes/onboarding.start'
-import { Route as OnboardingProfileRouteImport } from './routes/onboarding.profile'
-import { Route as OnboardingInviteRouteImport } from './routes/onboarding.invite'
-import { Route as OnboardingConnectRouteImport } from './routes/onboarding.connect'
-import { Route as DashboardReportsRouteImport } from './routes/dashboard.reports'
-import { Route as DashboardProjectsRouteImport } from './routes/dashboard.projects'
-import { Route as DashboardMessagingRouteImport } from './routes/dashboard.messaging'
-import { Route as DashboardIntegrationsRouteImport } from './routes/dashboard.integrations'
-import { Route as DashboardCollectorsRouteImport } from './routes/dashboard.collectors'
-import { Route as DashboardAutomationRouteImport } from './routes/dashboard.automation'
 import { Route as DashboardAdministrationRouteImport } from './routes/dashboard.administration'
-import { Route as DashboardProjectsIndexRouteImport } from './routes/dashboard.projects.index'
+import { Route as DashboardAutomationRouteImport } from './routes/dashboard.automation'
+import { Route as DashboardCollectorsRouteImport } from './routes/dashboard.collectors'
+import { Route as DashboardIntegrationsRouteImport } from './routes/dashboard.integrations'
+import { Route as DashboardMessagingRouteImport } from './routes/dashboard.messaging'
+import { Route as DashboardProjectsRouteImport } from './routes/dashboard.projects'
+import { Route as DashboardReportsRouteImport } from './routes/dashboard.reports'
+import { Route as OnboardingConnectRouteImport } from './routes/onboarding.connect'
+import { Route as OnboardingInviteRouteImport } from './routes/onboarding.invite'
+import { Route as OnboardingProfileRouteImport } from './routes/onboarding.profile'
+import { Route as OnboardingStartRouteImport } from './routes/onboarding.start'
 import { Route as DashboardCollectorsIndexRouteImport } from './routes/dashboard.collectors.index'
-import { Route as DashboardProjectsIdRouteImport } from './routes/dashboard.projects.$id'
-import { Route as DashboardCollectorsUploadRouteImport } from './routes/dashboard.collectors.upload'
 import { Route as DashboardCollectorsIdRouteImport } from './routes/dashboard.collectors.$id'
+import { Route as DashboardCollectorsUploadRouteImport } from './routes/dashboard.collectors.upload'
+import { Route as DashboardProjectsIndexRouteImport } from './routes/dashboard.projects.index'
+import { Route as DashboardProjectsIdRouteImport } from './routes/dashboard.projects.$id'
 
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingRoute = OnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -46,9 +41,14 @@ const DashboardRoute = DashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
@@ -56,49 +56,9 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashboardRoute,
 } as any)
-const OnboardingStartRoute = OnboardingStartRouteImport.update({
-  id: '/start',
-  path: '/start',
-  getParentRoute: () => OnboardingRoute,
-} as any)
-const OnboardingProfileRoute = OnboardingProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => OnboardingRoute,
-} as any)
-const OnboardingInviteRoute = OnboardingInviteRouteImport.update({
-  id: '/invite',
-  path: '/invite',
-  getParentRoute: () => OnboardingRoute,
-} as any)
-const OnboardingConnectRoute = OnboardingConnectRouteImport.update({
-  id: '/connect',
-  path: '/connect',
-  getParentRoute: () => OnboardingRoute,
-} as any)
-const DashboardReportsRoute = DashboardReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardProjectsRoute = DashboardProjectsRouteImport.update({
-  id: '/projects',
-  path: '/projects',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardMessagingRoute = DashboardMessagingRouteImport.update({
-  id: '/messaging',
-  path: '/messaging',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardIntegrationsRoute = DashboardIntegrationsRouteImport.update({
-  id: '/integrations',
-  path: '/integrations',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardCollectorsRoute = DashboardCollectorsRouteImport.update({
-  id: '/collectors',
-  path: '/collectors',
+const DashboardAdministrationRoute = DashboardAdministrationRouteImport.update({
+  id: '/administration',
+  path: '/administration',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardAutomationRoute = DashboardAutomationRouteImport.update({
@@ -106,15 +66,50 @@ const DashboardAutomationRoute = DashboardAutomationRouteImport.update({
   path: '/automation',
   getParentRoute: () => DashboardRoute,
 } as any)
-const DashboardAdministrationRoute = DashboardAdministrationRouteImport.update({
-  id: '/administration',
-  path: '/administration',
+const DashboardCollectorsRoute = DashboardCollectorsRouteImport.update({
+  id: '/collectors',
+  path: '/collectors',
   getParentRoute: () => DashboardRoute,
 } as any)
-const DashboardProjectsIndexRoute = DashboardProjectsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => DashboardProjectsRoute,
+const DashboardIntegrationsRoute = DashboardIntegrationsRouteImport.update({
+  id: '/integrations',
+  path: '/integrations',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardMessagingRoute = DashboardMessagingRouteImport.update({
+  id: '/messaging',
+  path: '/messaging',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardProjectsRoute = DashboardProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardReportsRoute = DashboardReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const OnboardingConnectRoute = OnboardingConnectRouteImport.update({
+  id: '/connect',
+  path: '/connect',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingInviteRoute = OnboardingInviteRouteImport.update({
+  id: '/invite',
+  path: '/invite',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingProfileRoute = OnboardingProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingStartRoute = OnboardingStartRouteImport.update({
+  id: '/start',
+  path: '/start',
+  getParentRoute: () => OnboardingRoute,
 } as any)
 const DashboardCollectorsIndexRoute =
   DashboardCollectorsIndexRouteImport.update({
@@ -122,10 +117,10 @@ const DashboardCollectorsIndexRoute =
     path: '/',
     getParentRoute: () => DashboardCollectorsRoute,
   } as any)
-const DashboardProjectsIdRoute = DashboardProjectsIdRouteImport.update({
+const DashboardCollectorsIdRoute = DashboardCollectorsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
-  getParentRoute: () => DashboardProjectsRoute,
+  getParentRoute: () => DashboardCollectorsRoute,
 } as any)
 const DashboardCollectorsUploadRoute =
   DashboardCollectorsUploadRouteImport.update({
@@ -133,10 +128,15 @@ const DashboardCollectorsUploadRoute =
     path: '/upload',
     getParentRoute: () => DashboardCollectorsRoute,
   } as any)
-const DashboardCollectorsIdRoute = DashboardCollectorsIdRouteImport.update({
+const DashboardProjectsIndexRoute = DashboardProjectsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardProjectsRoute,
+} as any)
+const DashboardProjectsIdRoute = DashboardProjectsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
-  getParentRoute: () => DashboardCollectorsRoute,
+  getParentRoute: () => DashboardProjectsRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -284,18 +284,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/onboarding': {
-      id: '/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof OnboardingRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -305,11 +298,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/': {
@@ -319,67 +319,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/onboarding/start': {
-      id: '/onboarding/start'
-      path: '/start'
-      fullPath: '/onboarding/start'
-      preLoaderRoute: typeof OnboardingStartRouteImport
-      parentRoute: typeof OnboardingRoute
-    }
-    '/onboarding/profile': {
-      id: '/onboarding/profile'
-      path: '/profile'
-      fullPath: '/onboarding/profile'
-      preLoaderRoute: typeof OnboardingProfileRouteImport
-      parentRoute: typeof OnboardingRoute
-    }
-    '/onboarding/invite': {
-      id: '/onboarding/invite'
-      path: '/invite'
-      fullPath: '/onboarding/invite'
-      preLoaderRoute: typeof OnboardingInviteRouteImport
-      parentRoute: typeof OnboardingRoute
-    }
-    '/onboarding/connect': {
-      id: '/onboarding/connect'
-      path: '/connect'
-      fullPath: '/onboarding/connect'
-      preLoaderRoute: typeof OnboardingConnectRouteImport
-      parentRoute: typeof OnboardingRoute
-    }
-    '/dashboard/reports': {
-      id: '/dashboard/reports'
-      path: '/reports'
-      fullPath: '/dashboard/reports'
-      preLoaderRoute: typeof DashboardReportsRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/projects': {
-      id: '/dashboard/projects'
-      path: '/projects'
-      fullPath: '/dashboard/projects'
-      preLoaderRoute: typeof DashboardProjectsRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/messaging': {
-      id: '/dashboard/messaging'
-      path: '/messaging'
-      fullPath: '/dashboard/messaging'
-      preLoaderRoute: typeof DashboardMessagingRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/integrations': {
-      id: '/dashboard/integrations'
-      path: '/integrations'
-      fullPath: '/dashboard/integrations'
-      preLoaderRoute: typeof DashboardIntegrationsRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/collectors': {
-      id: '/dashboard/collectors'
-      path: '/collectors'
-      fullPath: '/dashboard/collectors'
-      preLoaderRoute: typeof DashboardCollectorsRouteImport
+    '/dashboard/administration': {
+      id: '/dashboard/administration'
+      path: '/administration'
+      fullPath: '/dashboard/administration'
+      preLoaderRoute: typeof DashboardAdministrationRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/automation': {
@@ -389,19 +333,68 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAutomationRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/administration': {
-      id: '/dashboard/administration'
-      path: '/administration'
-      fullPath: '/dashboard/administration'
-      preLoaderRoute: typeof DashboardAdministrationRouteImport
+    '/dashboard/collectors': {
+      id: '/dashboard/collectors'
+      path: '/collectors'
+      fullPath: '/dashboard/collectors'
+      preLoaderRoute: typeof DashboardCollectorsRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/projects/': {
-      id: '/dashboard/projects/'
-      path: '/'
-      fullPath: '/dashboard/projects/'
-      preLoaderRoute: typeof DashboardProjectsIndexRouteImport
-      parentRoute: typeof DashboardProjectsRoute
+    '/dashboard/integrations': {
+      id: '/dashboard/integrations'
+      path: '/integrations'
+      fullPath: '/dashboard/integrations'
+      preLoaderRoute: typeof DashboardIntegrationsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/messaging': {
+      id: '/dashboard/messaging'
+      path: '/messaging'
+      fullPath: '/dashboard/messaging'
+      preLoaderRoute: typeof DashboardMessagingRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/projects': {
+      id: '/dashboard/projects'
+      path: '/projects'
+      fullPath: '/dashboard/projects'
+      preLoaderRoute: typeof DashboardProjectsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/reports': {
+      id: '/dashboard/reports'
+      path: '/reports'
+      fullPath: '/dashboard/reports'
+      preLoaderRoute: typeof DashboardReportsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/onboarding/connect': {
+      id: '/onboarding/connect'
+      path: '/connect'
+      fullPath: '/onboarding/connect'
+      preLoaderRoute: typeof OnboardingConnectRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/invite': {
+      id: '/onboarding/invite'
+      path: '/invite'
+      fullPath: '/onboarding/invite'
+      preLoaderRoute: typeof OnboardingInviteRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/profile': {
+      id: '/onboarding/profile'
+      path: '/profile'
+      fullPath: '/onboarding/profile'
+      preLoaderRoute: typeof OnboardingProfileRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/start': {
+      id: '/onboarding/start'
+      path: '/start'
+      fullPath: '/onboarding/start'
+      preLoaderRoute: typeof OnboardingStartRouteImport
+      parentRoute: typeof OnboardingRoute
     }
     '/dashboard/collectors/': {
       id: '/dashboard/collectors/'
@@ -410,12 +403,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardCollectorsIndexRouteImport
       parentRoute: typeof DashboardCollectorsRoute
     }
-    '/dashboard/projects/$id': {
-      id: '/dashboard/projects/$id'
+    '/dashboard/collectors/$id': {
+      id: '/dashboard/collectors/$id'
       path: '/$id'
-      fullPath: '/dashboard/projects/$id'
-      preLoaderRoute: typeof DashboardProjectsIdRouteImport
-      parentRoute: typeof DashboardProjectsRoute
+      fullPath: '/dashboard/collectors/$id'
+      preLoaderRoute: typeof DashboardCollectorsIdRouteImport
+      parentRoute: typeof DashboardCollectorsRoute
     }
     '/dashboard/collectors/upload': {
       id: '/dashboard/collectors/upload'
@@ -424,12 +417,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardCollectorsUploadRouteImport
       parentRoute: typeof DashboardCollectorsRoute
     }
-    '/dashboard/collectors/$id': {
-      id: '/dashboard/collectors/$id'
+    '/dashboard/projects/': {
+      id: '/dashboard/projects/'
+      path: '/'
+      fullPath: '/dashboard/projects/'
+      preLoaderRoute: typeof DashboardProjectsIndexRouteImport
+      parentRoute: typeof DashboardProjectsRoute
+    }
+    '/dashboard/projects/$id': {
+      id: '/dashboard/projects/$id'
       path: '/$id'
-      fullPath: '/dashboard/collectors/$id'
-      preLoaderRoute: typeof DashboardCollectorsIdRouteImport
-      parentRoute: typeof DashboardCollectorsRoute
+      fullPath: '/dashboard/projects/$id'
+      preLoaderRoute: typeof DashboardProjectsIdRouteImport
+      parentRoute: typeof DashboardProjectsRoute
     }
   }
 }
@@ -515,3 +515,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

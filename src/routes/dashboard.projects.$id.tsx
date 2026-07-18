@@ -51,7 +51,7 @@ function ProjectNotFound() {
   );
 }
 
-type TabId = "overview" | "collectors" | "submissions" | "analytics" | "training" | "messaging";
+type TabId = "overview" | "collectors" | "submissions" | "collection-data" | "gps-mapping";
 
 function ProjectDetail() {
   const { project } = Route.useLoaderData() as { project: Project };
@@ -83,11 +83,10 @@ function ProjectDetail() {
         onChange={setTab}
         tabs={[
           { id: "overview", label: "Overview" },
-          { id: "collectors", label: "Collectors", count: project.collectorIds.length },
+          { id: "collectors", label: "Data Collectors", count: project.collectorIds.length },
           { id: "submissions", label: "Submissions", count: project.submissions.length },
-          { id: "analytics", label: "Analytics" },
-          { id: "training", label: "Training" },
-          { id: "messaging", label: "Messaging" },
+          { id: "collection-data", label: "Collection Data" },
+          { id: "gps-mapping", label: "GPS-Mapping" },
         ]}
       />
 
@@ -95,15 +94,16 @@ function ProjectDetail() {
         {tab === "overview" && <Overview project={project} flaggedCount={flaggedCount} />}
         {tab === "collectors" && <CollectorsTab project={project} />}
         {tab === "submissions" && <SubmissionsTab project={project} />}
-        {tab === "analytics" && <AnalyticsTab project={project} />}
-        {tab === "training" && <TrainingTab project={project} />}
-        {tab === "messaging" && <MessagingTab project={project} />}
+        {tab === "collection-data" && <AnalyticsTab project={project} />}
+        {tab === "gps-mapping" && <GpsMappingTab />}
       </div>
     </>
   );
 }
 
 /* ---------------- Overview ---------------- */
+type OverviewSubView = "main" | "training" | "messaging";
+
 function Overview({
   project,
   flaggedCount,
@@ -111,6 +111,34 @@ function Overview({
   project: Project;
   flaggedCount: number;
 }) {
+  const [subView, setSubView] = useState<OverviewSubView>("main");
+
+  if (subView === "training") {
+    return (
+      <>
+        <div className="mb-4">
+          <button onClick={() => setSubView("main")} className="text-xs text-muted-foreground hover:text-foreground">
+            ← Back to overview
+          </button>
+        </div>
+        <TrainingTab project={project} />
+      </>
+    );
+  }
+
+  if (subView === "messaging") {
+    return (
+      <>
+        <div className="mb-4">
+          <button onClick={() => setSubView("main")} className="text-xs text-muted-foreground hover:text-foreground">
+            ← Back to overview
+          </button>
+        </div>
+        <MessagingTab project={project} />
+      </>
+    );
+  }
+
   if (project.status === "draft") {
     return (
       <EmptyState
@@ -120,26 +148,262 @@ function Overview({
       />
     );
   }
-  const approved = project.submissions.filter((s) => s.status === "approved").length;
-  const pending = project.submissions.filter((s) => s.status === "pending").length;
+
+  /* ---- Metric computations ---- */
+  const currentSubs = project.submissions.length;
+  const targetSubs = project.targetSubmissions || 1;
+
+  // Days remaining
+  const endMs = new Date(project.endDate).getTime();
+  const startMs = new Date(project.startDate).getTime();
+  const nowMs = new Date("2026-07-18").getTime();
+  const daysRemaining = Math.max(0, Math.ceil((endMs - nowMs) / 86_400_000));
+  const totalDays = Math.max(1, Math.ceil((endMs - startMs) / 86_400_000));
+  const elapsedDays = totalDays - daysRemaining;
+
+  // Average QA score (from training assessment scores)
+  const allScores = project.training
+    .flatMap((m) => m.progress)
+    .map((p) => p.score)
+    .filter((s): s is number => s !== null);
+  const avgQA = allScores.length > 0 ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length) : 0;
+
+  // Budget
+  const budgetUsed = Math.round(currentSubs * project.costPerSubmission);
+  const budgetTotal = project.budget;
+
+  /* ---- Progress chart data ---- */
+  const totalWeeks = Math.max(1, Math.ceil(totalDays / 7));
+  const elapsedWeeks = Math.min(totalWeeks, Math.max(1, Math.ceil(elapsedDays / 7)));
+  // Synthetic cumulative series trending toward target
+  const progressRatio = Math.min(1, elapsedDays / totalDays);
+  const syntheticTotal = Math.max(currentSubs, Math.round(targetSubs * progressRatio * 0.85));
+  const cumulativeSeries: number[] = [];
+  for (let i = 1; i <= elapsedWeeks; i++) {
+    const pct = i / elapsedWeeks;
+    cumulativeSeries.push(Math.round(syntheticTotal * pct * (0.7 + 0.3 * Math.sqrt(pct))));
+  }
+  // Target pace line
+  const targetPace: number[] = [];
+  for (let i = 1; i <= elapsedWeeks; i++) {
+    targetPace.push(Math.round((i / totalWeeks) * targetSubs));
+  }
+  const expectedByNow = targetPace[targetPace.length - 1] ?? 0;
+  const paceStatus = syntheticTotal >= expectedByNow ? "on track" : "behind pace";
+  const paceColor = paceStatus === "on track" ? "text-emerald-600" : "text-amber-600";
+
+  // Chart SVG
+  const chartW = 640, chartH = 180;
+  const allVals = [...cumulativeSeries, ...targetPace];
+  const chartMax = Math.max(targetSubs, ...allVals, 1);
+  const xStep = cumulativeSeries.length > 1 ? chartW / (cumulativeSeries.length - 1) : chartW;
+  function yPos(v: number) {
+    return chartH - (v / chartMax) * (chartH - 30) - 15;
+  }
+  const actualPts = cumulativeSeries.map((v, i) => `${i * xStep},${yPos(v)}`).join(" ");
+  const pacePts = targetPace.map((v, i) => `${i * xStep},${yPos(v)}`).join(" ");
+
+  /* ---- Collector breakdown ---- */
+  const activeCollectors = project.collectorIds.filter((id) => {
+    const c = allCollectors.find((x) => x.id === id);
+    return c && c.status === "active";
+  }).length;
+  const invitedCollectors = project.collectorIds.filter((id) => {
+    const c = allCollectors.find((x) => x.id === id);
+    return c && c.status === "invited";
+  }).length;
+  const notInvitedPool = allCollectors.length - project.collectorIds.length;
+  const collectorTotal = activeCollectors + invitedCollectors + notInvitedPool;
+  const barData = [
+    { label: "Active", count: activeCollectors, color: "bg-emerald-500" },
+    { label: "Invited", count: invitedCollectors, color: "bg-amber-400" },
+    { label: "Not invited", count: notInvitedPool, color: "bg-secondary" },
+  ];
+
+  /* ---- Training modules with completion ---- */
+  const moduleStats = project.training.map((m) => {
+    const total = m.progress.length;
+    const passed = m.progress.filter((p) => p.assessmentStatus === "passed").length;
+    const pct = total > 0 ? Math.round((passed / total) * 100) : 0;
+    return { ...m, completionPct: pct, isLow: pct < 50 && total > 0 };
+  });
+
+  /* ---- Recent messages ---- */
+  const recentMessages = project.messages.slice(0, 3);
+
+  function timeAgo(dateStr: string): string {
+    const thenMs = new Date(dateStr.replace(" ", "T")).getTime();
+    const diffHrs = Math.max(0, Math.floor((nowMs - thenMs) / 3_600_000));
+    const diffDays = Math.floor(diffHrs / 24);
+    if (diffDays > 7) return `${Math.floor(diffDays / 7)}w ago`;
+    if (diffDays > 0) return `${diffDays}d ago`;
+    if (diffHrs > 0) return `${diffHrs}h ago`;
+    return "just now";
+  }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <StatCard label="Collectors" value={project.collectorIds.length} />
-      <StatCard label="Submissions" value={project.submissions.length} />
-      <StatCard label="Pending review" value={pending} />
-      <StatCard label="Flagged" value={flaggedCount} />
-      <div className="sm:col-span-2 lg:col-span-4">
-        <div className="rounded-lg border border-border bg-card p-4">
-          <p className="text-sm font-medium text-foreground">Integration</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {project.platform
-              ? `${integrations.find((i) => i.id === project.platform)?.name} · form ${project.formName}`
-              : "No integration linked"}
+    <div className="space-y-6">
+      {/* ---- Summary metric row ---- */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Submissions" value={`${syntheticTotal} / ${targetSubs}`} hint={`${Math.round((syntheticTotal / targetSubs) * 100)}% of target`} />
+        <StatCard label="Days remaining" value={daysRemaining} hint={`of ${totalDays} days · ends ${project.endDate}`} />
+        <StatCard label="Avg QA score" value={avgQA > 0 ? `${avgQA}%` : "—"} hint={allScores.length > 0 ? `Across ${allScores.length} assessments` : "No assessments yet"} />
+        <StatCard label="Budget used" value={`$${budgetUsed.toLocaleString()}`} hint={`of $${budgetTotal.toLocaleString()} budget`} />
+      </div>
+
+      {/* ---- Progress chart + Collector breakdown ---- */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        {/* Progress toward target */}
+        <div className="rounded-lg border border-border bg-card p-5">
+          <p className="text-sm font-medium text-foreground">Progress toward target</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {syntheticTotal} of {targetSubs} submissions ·{" "}
+            <span className={paceColor}>{paceStatus}</span>
           </p>
+          <svg viewBox={`0 0 ${chartW} ${chartH}`} className="mt-4 w-full" aria-hidden="true">
+            {/* Target pace line (dashed) */}
+            <polyline points={pacePts} fill="none" stroke="var(--color-muted-foreground)" strokeWidth="1.5" strokeDasharray="6 4" opacity="0.5" />
+            {/* Actual line */}
+            <polyline points={actualPts} fill="none" stroke="var(--color-primary)" strokeWidth="2.5" />
+            {cumulativeSeries.map((v, i) => (
+              <circle key={i} cx={i * xStep} cy={yPos(v)} r="3.5" fill="var(--color-primary)" />
+            ))}
+            {/* Week labels */}
+            {cumulativeSeries.map((_, i) => (
+              <text key={`l${i}`} x={i * xStep} y={chartH - 1} textAnchor="middle" className="fill-muted-foreground" fontSize="10">
+                W{i + 1}
+              </text>
+            ))}
+          </svg>
+          <div className="mt-3 flex items-center gap-5 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5"><span className="inline-block h-0.5 w-4 rounded bg-primary" /> Submissions</span>
+            <span className="flex items-center gap-1.5"><span className="inline-block h-0.5 w-4 rounded bg-muted-foreground/50" style={{ borderTop: "1.5px dashed" }} /> Target pace</span>
+          </div>
+        </div>
+
+        {/* Collector status breakdown */}
+        <div className="rounded-lg border border-border bg-card p-5">
+          <p className="text-sm font-medium text-foreground">Collector status</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{project.collectorIds.length} assigned · {allCollectors.length} total pool</p>
+
+          {/* Stacked horizontal bar */}
+          <div className="mt-5 flex h-3 w-full overflow-hidden rounded-full bg-muted">
+            {barData.map((b) => (
+              b.count > 0 && (
+                <div
+                  key={b.label}
+                  className={`${b.color} h-full`}
+                  style={{ width: `${(b.count / collectorTotal) * 100}%` }}
+                />
+              )
+            ))}
+          </div>
+
+          {/* Legend */}
+          <ul className="mt-4 space-y-3">
+            {barData.map((b) => (
+              <li key={b.label} className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-2">
+                  <span className={`h-2.5 w-2.5 rounded-full ${b.color}`} />
+                  <span className="text-foreground">{b.label}</span>
+                </span>
+                <span className="tabular-nums text-muted-foreground">{b.count}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* ---- Training + Messaging cards ---- */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Training card */}
+        <div className="rounded-lg border border-border bg-card">
+          <div className="flex items-center justify-between border-b border-border px-5 py-3">
+            <p className="text-sm font-medium text-foreground">Training</p>
+            <button
+              onClick={() => setSubView("training")}
+              className="text-xs font-medium text-muted-foreground hover:text-foreground"
+            >
+              View all →
+            </button>
+          </div>
+          {moduleStats.length === 0 ? (
+            <div className="px-5 py-8 text-center text-sm text-muted-foreground">No training modules assigned yet</div>
+          ) : (
+            <ul className="divide-y divide-border">
+              {moduleStats.map((m) => (
+                <li key={m.id} className="flex items-center justify-between gap-4 px-5 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className={`truncate text-sm ${m.isLow ? "text-amber-800 font-medium" : "text-foreground"}`}>
+                      {m.title}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {m.progress.length} assigned · {m.materials.length} material{m.materials.length !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="h-1.5 w-20 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className={`h-full rounded-full ${m.isLow ? "bg-amber-500" : "bg-emerald-500"}`}
+                        style={{ width: `${m.completionPct}%` }}
+                      />
+                    </div>
+                    <span className={`w-10 text-right text-xs tabular-nums font-medium ${m.isLow ? "text-amber-700" : "text-foreground"}`}>
+                      {m.completionPct}%
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Messaging card */}
+        <div className="rounded-lg border border-border bg-card">
+          <div className="flex items-center justify-between border-b border-border px-5 py-3">
+            <p className="text-sm font-medium text-foreground">Messaging</p>
+            <button
+              onClick={() => setSubView("messaging")}
+              className="text-xs font-medium text-muted-foreground hover:text-foreground"
+            >
+              View all →
+            </button>
+          </div>
+          {recentMessages.length === 0 ? (
+            <div className="px-5 py-8 text-center text-sm text-muted-foreground">No messages sent yet</div>
+          ) : (
+            <ul className="divide-y divide-border">
+              {recentMessages.map((m) => (
+                <li key={m.id} className="px-5 py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="truncate text-sm text-foreground">{m.preview}</p>
+                    <span className="shrink-0 text-xs text-muted-foreground">{timeAgo(m.sentAt)}</span>
+                  </div>
+                  <div className="mt-1.5 flex items-center gap-3 text-xs text-muted-foreground">
+                    <span className="flex gap-1">
+                      {m.channel.map((c) => (
+                        <Badge key={c} tone="muted">{c}</Badge>
+                      ))}
+                    </span>
+                    <span>{m.recipients} recipients · {m.delivered} delivered</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </div>
+  );
+}
+
+/* ---------------- GPS-Mapping ---------------- */
+function GpsMappingTab() {
+  return (
+    <EmptyState
+      title="GPS mapping coming soon"
+      description="Visualise collector coverage and submission locations on a map."
+    />
   );
 }
 
@@ -170,7 +434,7 @@ function CollectorsTab({ project }: { project: Project }) {
   }, [search, values]);
 
   function assignmentStatus(id: string): string {
-    if (project.collectorIds.includes(id)) return "assigned";
+    if (project.collectorIds.includes(id)) return "active";
     if (invited.has(id) && !project.collectorIds.includes(id)) return "invited";
     return "not invited";
   }

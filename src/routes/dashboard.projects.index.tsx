@@ -40,6 +40,9 @@ function ProjectsList() {
       submissions: [],
       training: [],
       messages: [],
+      targetSubmissions: 0,
+      budget: 0,
+      costPerSubmission: 0,
     })),
   ];
 
