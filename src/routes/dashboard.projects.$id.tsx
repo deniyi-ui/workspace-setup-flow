@@ -51,7 +51,7 @@ function ProjectNotFound() {
   );
 }
 
-type TabId = "overview" | "collectors" | "submissions" | "collection-data" | "gps-mapping";
+type TabId = "overview" | "collectors" | "submissions" | "analytics" | "gps-mapping";
 
 function ProjectDetail() {
   const { project } = Route.useLoaderData() as { project: Project };
@@ -85,7 +85,7 @@ function ProjectDetail() {
           { id: "overview", label: "Overview" },
           { id: "collectors", label: "Data Collectors", count: project.collectorIds.length },
           { id: "submissions", label: "Submissions", count: project.submissions.length },
-          { id: "collection-data", label: "Collection Data" },
+          { id: "analytics", label: "Analytics" },
           { id: "gps-mapping", label: "GPS-Mapping" },
         ]}
       />
@@ -94,7 +94,7 @@ function ProjectDetail() {
         {tab === "overview" && <Overview project={project} flaggedCount={flaggedCount} />}
         {tab === "collectors" && <CollectorsTab project={project} />}
         {tab === "submissions" && <SubmissionsTab project={project} />}
-        {tab === "collection-data" && <AnalyticsTab project={project} />}
+        {tab === "analytics" && <AnalyticsTab project={project} />}
         {tab === "gps-mapping" && <GpsMappingTab />}
       </div>
     </>
@@ -736,11 +736,14 @@ function MetaCell({
 
 /* ---------------- Analytics ---------------- */
 type SortKey = "name" | "subs" | "avgDur" | "approvalRate";
+type AnalyticsLayout = "overview" | "operational" | "responses";
+
 function AnalyticsTab({ project }: { project: Project }) {
+  const [layout, setLayout] = useState<AnalyticsLayout>("overview");
   const [includeAll, setIncludeAll] = useState(false);
   const [qIdx, setQIdx] = useState(0);
-  const [sortKey, setSortKey] = useState<SortKey>("subs");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [sortKey, setSortKey] = useState<SortKey>("approvalRate");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   if (project.submissions.length === 0) {
     return (
@@ -751,6 +754,7 @@ function AnalyticsTab({ project }: { project: Project }) {
     );
   }
 
+  /* ---- Core metrics ---- */
   const subs = project.submissions;
   const approved = subs.filter((s) => s.status === "approved");
   const pending = subs.filter((s) => s.status === "pending");
@@ -760,31 +764,41 @@ function AnalyticsTab({ project }: { project: Project }) {
     ? Math.round(subs.reduce((a, s) => a + s.durationMin, 0) / subs.length)
     : 0;
 
+  // Average QA score from training assessments
+  const allScores = project.training
+    .flatMap((m) => m.progress)
+    .map((p) => p.score)
+    .filter((s): s is number => s !== null);
+  const avgQA = allScores.length > 0 ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length) : 0;
+
+  /* ---- Submissions over time chart ---- */
   const series = [4, 8, 12, 10, 15, 18, 22];
   const max = Math.max(...series);
-  const width = 640,
-    height = 160;
-  const step = width / (series.length - 1);
+  const chartWidth = 640,
+    chartHeight = 160;
+  const chartStep = chartWidth / (series.length - 1);
   const pts = series
-    .map((v, i) => `${i * step},${height - (v / max) * (height - 30) - 15}`)
+    .map((v, i) => `${i * chartStep},${chartHeight - (v / max) * (chartHeight - 30) - 15}`)
     .join(" ");
 
+  /* ---- Status donut ---- */
   const total = subs.length;
   const donut = [
     { label: "Approved", count: approved.length, color: "var(--color-primary)" },
     { label: "Awaiting approval", count: pending.length, color: "var(--color-muted-foreground)" },
     { label: "Flagged / rejected", count: flagged.length, color: "#d97706" },
   ];
-  let acc = 0;
+  let donutAcc = 0;
   const r = 52,
     c = 2 * Math.PI * r;
   const donutSegs = donut.map((d) => {
     const frac = total ? d.count / total : 0;
-    const seg = { ...d, offset: acc, length: c * frac };
-    acc += c * frac;
+    const seg = { ...d, offset: donutAcc, length: c * frac };
+    donutAcc += c * frac;
     return seg;
   });
 
+  /* ---- Collector performance ---- */
   const perf = project.collectorIds
     .map((id) => {
       const cx = allCollectors.find((x) => x.id === id);
@@ -806,11 +820,12 @@ function AnalyticsTab({ project }: { project: Project }) {
     if (k === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else {
       setSortKey(k);
-      setSortDir(k === "name" ? "asc" : "desc");
+      setSortDir(k === "name" ? "asc" : "asc");
     }
   }
   const arrow = (k: SortKey) => (sortKey === k ? (sortDir === "asc" ? " ↑" : " ↓") : "");
 
+  /* ---- Coverage by location ---- */
   const byLocation = subs.reduce<Record<string, number>>((acc, s) => {
     const country = s.location.split(",").pop()?.trim() || s.location;
     acc[country] = (acc[country] ?? 0) + 1;
@@ -819,6 +834,7 @@ function AnalyticsTab({ project }: { project: Project }) {
   const locRows = Object.entries(byLocation).sort((a, b) => b[1] - a[1]);
   const locMax = Math.max(1, ...locRows.map(([, v]) => v));
 
+  /* ---- Response breakdown ---- */
   const pool = includeAll ? subs : approved;
   const questions = Array.from(new Set(subs.flatMap((s) => s.responses.map((r) => r.question))));
   const currentQ = questions[qIdx] ?? questions[0];
@@ -831,208 +847,274 @@ function AnalyticsTab({ project }: { project: Project }) {
   const isChoice = unique.length > 0 && unique.length <= 6;
   const sortedAnswers = Object.entries(answerCounts).sort((a, b) => b[1] - a[1]);
 
+  /* ---- Layout switcher button style ---- */
+  const layouts: { id: AnalyticsLayout; label: string }[] = [
+    { id: "overview", label: "Overview" },
+    { id: "operational", label: "Operational" },
+    { id: "responses", label: "Responses" },
+  ];
+
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total submissions" value={subs.length} />
-        <StatCard label="Approval rate" value={`${approvalRate}%`} hint={`${approved.length} approved`} />
-        <StatCard label="Average duration" value={`${avgDuration} min`} />
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-          <p className="text-xs text-amber-900/80">Flagged for review</p>
-          <p className="mt-1 text-2xl font-semibold tracking-tight text-amber-900">{flagged.length}</p>
-          <p className="mt-1 text-xs text-amber-900/70">Needs attention</p>
-        </div>
+      {/* ---- Layout switcher ---- */}
+      <div className="inline-flex rounded-lg border border-border bg-muted p-0.5">
+        {layouts.map((l) => (
+          <button
+            key={l.id}
+            onClick={() => setLayout(l.id)}
+            className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+              layout === l.id
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {l.label}
+          </button>
+        ))}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <div className="rounded-lg border border-border bg-card p-5">
-          <p className="text-sm font-medium text-foreground">Submissions over time</p>
-          <p className="text-xs text-muted-foreground">Daily volume across active date range</p>
-          <svg viewBox={`0 0 ${width} ${height}`} className="mt-4 w-full">
-            <polyline points={pts} fill="none" stroke="var(--color-primary)" strokeWidth="2" />
-            {series.map((v, i) => (
-              <circle
-                key={i}
-                cx={i * step}
-                cy={height - (v / max) * (height - 30) - 15}
-                r="3"
-                fill="var(--color-primary)"
-              />
-            ))}
-          </svg>
-        </div>
+      {/* ======== OVERVIEW layout ======== */}
+      {layout === "overview" && (
+        <>
+          {/* 5 metric cards */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <StatCard label="Total submissions" value={subs.length} />
+            <StatCard label="Approval rate" value={`${approvalRate}%`} hint={`${approved.length} approved`} />
+            <StatCard label="Average duration" value={`${avgDuration} min`} />
+            <StatCard label="Avg QA score" value={avgQA > 0 ? `${avgQA}%` : "—"} hint={allScores.length > 0 ? `${allScores.length} assessments` : "No data"} />
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <p className="text-xs text-amber-900/80">Flagged for review</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight text-amber-900">{flagged.length}</p>
+              <p className="mt-1 text-xs text-amber-900/70">Needs attention</p>
+            </div>
+          </div>
 
-        <div className="rounded-lg border border-border bg-card p-5">
-          <p className="text-sm font-medium text-foreground">Status breakdown</p>
-          <div className="mt-4 flex items-center gap-5">
-            <svg viewBox="0 0 140 140" className="h-32 w-32 -rotate-90">
-              <circle cx="70" cy="70" r={r} fill="none" stroke="var(--color-muted)" strokeWidth="16" />
-              {donutSegs.map((s, i) => (
+          {/* Status breakdown + Coverage by location */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Status breakdown donut */}
+            <div className="rounded-lg border border-border bg-card p-5">
+              <p className="text-sm font-medium text-foreground">Status breakdown</p>
+              <div className="mt-4 flex items-center gap-5">
+                <svg viewBox="0 0 140 140" className="h-32 w-32 -rotate-90">
+                  <circle cx="70" cy="70" r={r} fill="none" stroke="var(--color-muted)" strokeWidth="16" />
+                  {donutSegs.map((s, i) => (
+                    <circle
+                      key={i}
+                      cx="70"
+                      cy="70"
+                      r={r}
+                      fill="none"
+                      stroke={s.color}
+                      strokeWidth="16"
+                      strokeDasharray={`${s.length} ${c - s.length}`}
+                      strokeDashoffset={-s.offset}
+                    />
+                  ))}
+                </svg>
+                <ul className="space-y-1.5 text-sm">
+                  {donut.map((d) => (
+                    <li key={d.label} className="flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: d.color }} />
+                      <span className="text-foreground">{d.label}</span>
+                      <span className="tabular-nums text-muted-foreground">
+                        {d.count} · {total ? Math.round((d.count / total) * 100) : 0}%
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Coverage by location */}
+            <div className="rounded-lg border border-border bg-card p-5">
+              <p className="text-sm font-medium text-foreground">Coverage by location</p>
+              {locRows.length === 0 ? (
+                <p className="mt-4 text-sm text-muted-foreground">No location data available.</p>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {locRows.map(([loc, n]) => (
+                    <li key={loc} className="text-sm">
+                      <div className="flex justify-between text-muted-foreground">
+                        <span className="text-foreground">{loc}</span>
+                        <span className="tabular-nums">{n} submission{n === 1 ? "" : "s"}</span>
+                      </div>
+                      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                        <div className="h-full bg-primary" style={{ width: `${(n / locMax) * 100}%` }} />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ======== OPERATIONAL layout ======== */}
+      {layout === "operational" && (
+        <>
+          {/* 4 attention-focused metric cards */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard label="Avg QA score" value={avgQA > 0 ? `${avgQA}%` : "—"} hint={allScores.length > 0 ? `${allScores.length} assessments` : "No data"} />
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <p className="text-xs text-amber-900/80">Flagged for review</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight text-amber-900">{flagged.length}</p>
+              <p className="mt-1 text-xs text-amber-900/70">Needs attention</p>
+            </div>
+            <StatCard label="Approval rate" value={`${approvalRate}%`} hint={`${approved.length} approved`} />
+            <StatCard label="Average duration" value={`${avgDuration} min`} />
+          </div>
+
+          {/* Submissions over time */}
+          <div className="rounded-lg border border-border bg-card p-5">
+            <p className="text-sm font-medium text-foreground">Submissions over time</p>
+            <p className="text-xs text-muted-foreground">Daily volume across active date range</p>
+            <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="mt-4 w-full">
+              <polyline points={pts} fill="none" stroke="var(--color-primary)" strokeWidth="2" />
+              {series.map((v, i) => (
                 <circle
                   key={i}
-                  cx="70"
-                  cy="70"
-                  r={r}
-                  fill="none"
-                  stroke={s.color}
-                  strokeWidth="16"
-                  strokeDasharray={`${s.length} ${c - s.length}`}
-                  strokeDashoffset={-s.offset}
+                  cx={i * chartStep}
+                  cy={chartHeight - (v / max) * (chartHeight - 30) - 15}
+                  r="3"
+                  fill="var(--color-primary)"
                 />
               ))}
             </svg>
-            <ul className="space-y-1.5 text-sm">
-              {donut.map((d) => (
-                <li key={d.label} className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: d.color }} />
-                  <span className="text-foreground">{d.label}</span>
-                  <span className="tabular-nums text-muted-foreground">
-                    {d.count} · {total ? Math.round((d.count / total) * 100) : 0}%
-                  </span>
-                </li>
-              ))}
-            </ul>
           </div>
-        </div>
-      </div>
 
-      <div className="rounded-lg border border-border bg-card">
-        <div className="border-b border-border px-5 py-3">
-          <p className="text-sm font-medium text-foreground">Collector performance</p>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40">
-              <tr className="text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                <th className="cursor-pointer px-4 py-2.5" onClick={() => toggleSort("name")}>
-                  Collector{arrow("name")}
-                </th>
-                <th className="cursor-pointer px-4 py-2.5 text-right" onClick={() => toggleSort("subs")}>
-                  Submissions{arrow("subs")}
-                </th>
-                <th className="cursor-pointer px-4 py-2.5 text-right" onClick={() => toggleSort("avgDur")}>
-                  Avg duration{arrow("avgDur")}
-                </th>
-                <th className="cursor-pointer px-4 py-2.5 text-right" onClick={() => toggleSort("approvalRate")}>
-                  Approval rate{arrow("approvalRate")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((row) => (
-                <tr key={row.id} className="border-t border-border">
-                  <td className="px-4 py-3 text-foreground">{row.name}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{row.subs}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{row.avgDur ? `${row.avgDur} min` : "—"}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{row.subs ? `${row.approvalRate}%` : "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div className="rounded-lg border border-border bg-card p-5">
-        <p className="text-sm font-medium text-foreground">Coverage by location</p>
-        <ul className="mt-3 space-y-2">
-          {locRows.map(([loc, n]) => (
-            <li key={loc} className="text-sm">
-              <div className="flex justify-between text-muted-foreground">
-                <span className="text-foreground">{loc}</span>
-                <span className="tabular-nums">{n} submission{n === 1 ? "" : "s"}</span>
-              </div>
-              <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                <div className="h-full bg-primary" style={{ width: `${(n / locMax) * 100}%` }} />
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="rounded-lg border border-border bg-card p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-foreground">Question response breakdown</p>
-            <p className="text-xs text-muted-foreground">
-              Question {Math.min(qIdx + 1, questions.length)} of {questions.length} · {answers.length}{" "}
-              response{answers.length === 1 ? "" : "s"}
-            </p>
+          {/* Collector performance table */}
+          <div className="rounded-lg border border-border bg-card">
+            <div className="border-b border-border px-5 py-3">
+              <p className="text-sm font-medium text-foreground">Collector performance</p>
+              <p className="text-xs text-muted-foreground">Sorted by lowest approval rate first</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40">
+                  <tr className="text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <th className="cursor-pointer px-4 py-2.5" onClick={() => toggleSort("name")}>
+                      Collector{arrow("name")}
+                    </th>
+                    <th className="cursor-pointer px-4 py-2.5 text-right" onClick={() => toggleSort("subs")}>
+                      Submissions{arrow("subs")}
+                    </th>
+                    <th className="cursor-pointer px-4 py-2.5 text-right" onClick={() => toggleSort("avgDur")}>
+                      Avg duration{arrow("avgDur")}
+                    </th>
+                    <th className="cursor-pointer px-4 py-2.5 text-right" onClick={() => toggleSort("approvalRate")}>
+                      Approval rate{arrow("approvalRate")}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sorted.map((row) => (
+                    <tr key={row.id} className="border-t border-border">
+                      <td className="px-4 py-3 text-foreground">{row.name}</td>
+                      <td className="px-4 py-3 text-right tabular-nums">{row.subs}</td>
+                      <td className="px-4 py-3 text-right tabular-nums">{row.avgDur ? `${row.avgDur} min` : "—"}</td>
+                      <td className={`px-4 py-3 text-right tabular-nums ${row.subs > 0 && row.approvalRate < 50 ? "text-amber-700 font-medium" : ""}`}>
+                        {row.subs ? `${row.approvalRate}%` : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <label className="flex items-center gap-2 text-xs text-muted-foreground">
-              <input
-                type="checkbox"
-                checked={includeAll}
-                onChange={(e) => setIncludeAll(e.target.checked)}
-                className="h-3.5 w-3.5 rounded border-input"
-              />
-              Include non-approved
-            </label>
-            <div className="flex items-center gap-1">
-              <button
-                className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
-                onClick={() => setQIdx((i) => Math.max(0, i - 1))}
-                disabled={qIdx === 0}
-              >
-                ←
-              </button>
-              <select
-                value={qIdx}
-                onChange={(e) => setQIdx(Number(e.target.value))}
-                className="rounded-md border border-input bg-background px-2 py-1 text-xs"
-              >
-                {questions.map((q, i) => (
-                  <option key={q} value={i}>
-                    Q{i + 1}. {q}
-                  </option>
-                ))}
-              </select>
-              <button
-                className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
-                onClick={() => setQIdx((i) => Math.min(questions.length - 1, i + 1))}
-                disabled={qIdx >= questions.length - 1}
-              >
-                →
+        </>
+      )}
+
+      {/* ======== RESPONSES layout ======== */}
+      {layout === "responses" && (
+        <div className="rounded-lg border border-border bg-card p-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-foreground">Question response breakdown</p>
+              <p className="text-xs text-muted-foreground">
+                Question {Math.min(qIdx + 1, questions.length)} of {questions.length} · {answers.length}{" "}
+                response{answers.length === 1 ? "" : "s"}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={includeAll}
+                  onChange={(e) => setIncludeAll(e.target.checked)}
+                  className="h-3.5 w-3.5 rounded border-input"
+                />
+                Include non-approved
+              </label>
+              <div className="flex items-center gap-1">
+                <button
+                  className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
+                  onClick={() => setQIdx((i) => Math.max(0, i - 1))}
+                  disabled={qIdx === 0}
+                >
+                  ←
+                </button>
+                <select
+                  value={qIdx}
+                  onChange={(e) => setQIdx(Number(e.target.value))}
+                  className="rounded-md border border-input bg-background px-2 py-1 text-xs"
+                >
+                  {questions.map((q, i) => (
+                    <option key={q} value={i}>
+                      Q{i + 1}. {q}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
+                  onClick={() => setQIdx((i) => Math.min(questions.length - 1, i + 1))}
+                  disabled={qIdx >= questions.length - 1}
+                >
+                  →
+                </button>
+              </div>
+              <button className={btnSecondary + " !text-xs !py-1 !px-3"}>
+                Download Spreadsheet
               </button>
             </div>
           </div>
-        </div>
 
-        <p className="mt-4 text-sm text-foreground">{currentQ}</p>
+          <p className="mt-4 text-sm text-foreground">{currentQ}</p>
 
-        {answers.length === 0 ? (
-          <p className="mt-4 text-sm text-muted-foreground">No responses to display for this question.</p>
-        ) : isChoice ? (
-          <ul className="mt-4 space-y-2">
-            {sortedAnswers.map(([label, count]) => {
-              const pct = Math.round((count / answers.length) * 100);
-              return (
-                <li key={label} className="text-sm">
-                  <div className="flex justify-between text-muted-foreground">
-                    <span className="text-foreground">{label}</span>
-                    <span className="tabular-nums">
-                      {count} · {pct}%
-                    </span>
-                  </div>
-                  <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                    <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <div className="mt-4 max-h-72 overflow-y-auto rounded-md border border-border">
-            <ul className="divide-y divide-border">
-              {answers.map((a, i) => (
-                <li key={i} className="px-3 py-2 text-sm text-foreground">
-                  {a}
-                </li>
-              ))}
+          {answers.length === 0 ? (
+            <p className="mt-4 text-sm text-muted-foreground">No responses to display for this question.</p>
+          ) : isChoice ? (
+            <ul className="mt-4 space-y-2">
+              {sortedAnswers.map(([label, count]) => {
+                const pct = Math.round((count / answers.length) * 100);
+                return (
+                  <li key={label} className="text-sm">
+                    <div className="flex justify-between text-muted-foreground">
+                      <span className="text-foreground">{label}</span>
+                      <span className="tabular-nums">
+                        {count} · {pct}%
+                      </span>
+                    </div>
+                    <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                      <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className="mt-4 max-h-72 overflow-y-auto rounded-md border border-border">
+              <ul className="divide-y divide-border">
+                {answers.map((a, i) => (
+                  <li key={i} className="px-3 py-2 text-sm text-foreground">
+                    {a}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
