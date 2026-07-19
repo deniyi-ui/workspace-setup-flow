@@ -115,6 +115,7 @@ export interface Project {
   targetSubmissions: number;
   budget: number;
   costPerSubmission: number;
+  targetRegionGps?: [number, number][];
 }
 
 export interface Integration {
@@ -398,6 +399,7 @@ export const projects: Project[] = [
     targetSubmissions: 500,
     budget: 2100,
     costPerSubmission: 4.20,
+    targetRegionGps: [[10.0, 2.5], [10.0, 38.0], [-2.0, 38.0], [-2.0, 2.5]],
   },
   {
     id: "p2",
@@ -450,6 +452,7 @@ export const projects: Project[] = [
     targetSubmissions: 200,
     budget: 1000,
     costPerSubmission: 5.00,
+    targetRegionGps: [[-15.60, 28.10], [-15.60, 28.50], [-15.20, 28.50], [-15.20, 28.10]],
   },
   {
     id: "p3",

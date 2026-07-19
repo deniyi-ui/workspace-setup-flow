@@ -95,7 +95,7 @@ function ProjectDetail() {
         {tab === "collectors" && <CollectorsTab project={project} />}
         {tab === "submissions" && <SubmissionsTab project={project} />}
         {tab === "analytics" && <AnalyticsTab project={project} />}
-        {tab === "gps-mapping" && <GpsMappingTab />}
+        {tab === "gps-mapping" && <GpsMappingTab project={project} />}
       </div>
     </>
   );
@@ -398,12 +398,461 @@ function Overview({
 }
 
 /* ---------------- GPS-Mapping ---------------- */
-function GpsMappingTab() {
+type QaSeverity = "critical" | "warning" | "clean";
+
+function parseGps(gps: string): [number, number] {
+  const [lat, lng] = gps.split(",").map((s) => parseFloat(s.trim()));
+  return [lat, lng];
+}
+
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function isInsideRegion(lat: number, lng: number, region: [number, number][]): boolean {
+  const lats = region.map((p) => p[0]);
+  const lngs = region.map((p) => p[1]);
+  return lat >= Math.min(...lats) && lat <= Math.max(...lats) && lng >= Math.min(...lngs) && lng <= Math.max(...lngs);
+}
+
+function getSubmissionSeverity(
+  sub: Submission,
+  targetRegion?: [number, number][],
+): { severity: QaSeverity; flags: string[] } {
+  const flags: string[] = [];
+  const [lat, lng] = parseGps(sub.gps);
+
+  if (targetRegion && !isInsideRegion(lat, lng, targetRegion)) {
+    flags.push("GPS outside study area");
+  }
+  if (sub.status === "flagged") {
+    flags.push(sub.flagReason ?? "Flagged for review");
+  }
+  if (sub.durationMin < 10 && sub.status !== "flagged") {
+    flags.push(`Short survey duration (${sub.durationMin} min)`);
+  }
+
+  const hasCritical = flags.some((f) => f.includes("GPS outside") || f.includes("Flagged") || f.includes("flagged") || f.includes("Straight-lining") || f.includes("Duration well below"));
+  const severity: QaSeverity = hasCritical ? "critical" : flags.length > 0 ? "warning" : "clean";
+  return { severity, flags };
+}
+
+const severityColor: Record<QaSeverity, string> = {
+  critical: "#dc2626",
+  warning: "#d97706",
+  clean: "#16a34a",
+};
+const severityLabel: Record<QaSeverity, string> = {
+  critical: "Critical",
+  warning: "Warning",
+  clean: "Clean",
+};
+
+function timeAgo(dateStr: string): string {
+  const d = new Date(dateStr.replace(" ", "T"));
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+function GpsMappingTab({ project }: { project: Project }) {
+  const [dateFilter, setDateFilter] = useState("");
+  const [collectorFilter, setCollectorFilter] = useState("all");
+  const [regionFilter, setRegionFilter] = useState("all");
+  const [qaFilter, setQaFilter] = useState<"all" | QaSeverity>("all");
+
+  const [showPins, setShowPins] = useState(true);
+  const [showBoundary, setShowBoundary] = useState(true);
+  const [showRoutes, setShowRoutes] = useState(false);
+
+  const [zoom, setZoom] = useState(1);
+  const [hoveredPin, setHoveredPin] = useState<string | null>(null);
+
+  if (project.submissions.length === 0) {
+    return (
+      <EmptyState
+        title="No GPS data yet"
+        description="Submission locations will appear here once collectors start submitting."
+      />
+    );
+  }
+
+  /* ---- Enrich submissions with QA severity ---- */
+  const enriched = project.submissions.map((sub) => ({
+    ...sub,
+    ...getSubmissionSeverity(sub, project.targetRegionGps),
+    gpsCoords: parseGps(sub.gps),
+  }));
+
+  /* ---- Unique values for filter dropdowns ---- */
+  const collectorNames = Array.from(new Set(enriched.map((s) => s.collectorName))).sort();
+  const regions = Array.from(new Set(enriched.map((s) => s.location.split(",").pop()?.trim() ?? s.location))).sort();
+
+  /* ---- Apply filters ---- */
+  const filtered = enriched.filter((s) => {
+    if (dateFilter && !s.submittedAt.startsWith(dateFilter)) return false;
+    if (collectorFilter !== "all" && s.collectorName !== collectorFilter) return false;
+    if (regionFilter !== "all" && !s.location.includes(regionFilter)) return false;
+    if (qaFilter !== "all" && s.severity !== qaFilter) return false;
+    return true;
+  });
+
+  /* ---- Compute map bounds ---- */
+  const allCoords = filtered.map((s) => s.gpsCoords);
+  if (project.targetRegionGps) {
+    project.targetRegionGps.forEach((p) => allCoords.push(p));
+  }
+  const padding = 1.5;
+  const minLat = Math.min(...allCoords.map((p) => p[0])) - padding;
+  const maxLat = Math.max(...allCoords.map((p) => p[0])) + padding;
+  const minLng = Math.min(...allCoords.map((p) => p[1])) - padding;
+  const maxLng = Math.max(...allCoords.map((p) => p[1])) + padding;
+
+  const svgW = 700, svgH = 500;
+  const projX = (lng: number) => ((lng - minLng) / (maxLng - minLng)) * svgW;
+  const projY = (lat: number) => ((maxLat - lat) / (maxLat - minLat)) * svgH;
+
+  /* ---- Zoom viewBox ---- */
+  const vbW = svgW / zoom, vbH = svgH / zoom;
+  const vbX = (svgW - vbW) / 2, vbY = (svgH - vbH) / 2;
+
+  /* ---- Target region polygon ---- */
+  const regionPoly = project.targetRegionGps
+    ? project.targetRegionGps.map(([lat, lng]) => `${projX(lng)},${projY(lat)}`).join(" ")
+    : null;
+
+  /* ---- Collector routes ---- */
+  const byCollector: Record<string, typeof filtered> = {};
+  for (const s of filtered) {
+    (byCollector[s.collectorId] ??= []).push(s);
+  }
+  // Sort each collector's submissions chronologically
+  for (const key of Object.keys(byCollector)) {
+    byCollector[key].sort((a, b) => a.submittedAt.localeCompare(b.submittedAt));
+  }
+
+  const SPEED_LIMIT_KMH = 120;
+  const routeSegments: { x1: number; y1: number; x2: number; y2: number; flagged: boolean; collectorId: string }[] = [];
+  for (const [, subs] of Object.entries(byCollector)) {
+    for (let i = 1; i < subs.length; i++) {
+      const prev = subs[i - 1], curr = subs[i];
+      const dist = haversineKm(prev.gpsCoords[0], prev.gpsCoords[1], curr.gpsCoords[0], curr.gpsCoords[1]);
+      const timeDiffH =
+        (new Date(curr.submittedAt.replace(" ", "T")).getTime() -
+          new Date(prev.submittedAt.replace(" ", "T")).getTime()) /
+        3600000;
+      const speed = timeDiffH > 0 ? dist / timeDiffH : Infinity;
+      routeSegments.push({
+        x1: projX(prev.gpsCoords[1]),
+        y1: projY(prev.gpsCoords[0]),
+        x2: projX(curr.gpsCoords[1]),
+        y2: projY(curr.gpsCoords[0]),
+        flagged: speed > SPEED_LIMIT_KMH,
+        collectorId: prev.collectorId,
+      });
+    }
+  }
+
+  /* ---- Activity log events ---- */
+  const events = filtered
+    .map((s) => ({
+      id: s.id,
+      collectorName: s.collectorName,
+      severity: s.severity,
+      description:
+        s.flags.length > 0
+          ? `${s.flags[0]} · ${s.location}`
+          : `Submission received · ${s.location}`,
+      location: s.location,
+      submittedAt: s.submittedAt,
+    }))
+    .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
+
+  /* ---- Grid lines for map background ---- */
+  const gridLats: number[] = [];
+  const gridLngs: number[] = [];
+  const latStep = Math.max(1, Math.round((maxLat - minLat) / 6));
+  const lngStep = Math.max(1, Math.round((maxLng - minLng) / 6));
+  for (let lat = Math.ceil(minLat); lat <= Math.floor(maxLat); lat += latStep) gridLats.push(lat);
+  for (let lng = Math.ceil(minLng); lng <= Math.floor(maxLng); lng += lngStep) gridLngs.push(lng);
+
   return (
-    <EmptyState
-      title="GPS mapping coming soon"
-      description="Visualise collector coverage and submission locations on a map."
-    />
+    <div className="space-y-4">
+      {/* ---- Filter row ---- */}
+      <div className="flex flex-wrap items-end gap-3">
+        <div>
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">Date</label>
+          <input
+            type="date"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            className="rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">Collector</label>
+          <select
+            value={collectorFilter}
+            onChange={(e) => setCollectorFilter(e.target.value)}
+            className="rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+          >
+            <option value="all">All collectors</option>
+            {collectorNames.map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">Region</label>
+          <select
+            value={regionFilter}
+            onChange={(e) => setRegionFilter(e.target.value)}
+            className="rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+          >
+            <option value="all">All regions</option>
+            {regions.map((r) => (
+              <option key={r} value={r}>{r}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">QA status</label>
+          <select
+            value={qaFilter}
+            onChange={(e) => setQaFilter(e.target.value as "all" | QaSeverity)}
+            className="rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+          >
+            <option value="all">All</option>
+            <option value="critical">Critical</option>
+            <option value="warning">Warning</option>
+            <option value="clean">Clean</option>
+          </select>
+        </div>
+        {(dateFilter || collectorFilter !== "all" || regionFilter !== "all" || qaFilter !== "all") && (
+          <button
+            className="rounded-md px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => { setDateFilter(""); setCollectorFilter("all"); setRegionFilter("all"); setQaFilter("all"); }}
+          >
+            Clear filters
+          </button>
+        )}
+      </div>
+
+      {/* ---- Display options ---- */}
+      <div className="flex flex-wrap gap-6">
+        {([
+          ["showPins", showPins, setShowPins, "Submissions"] as const,
+          ["showBoundary", showBoundary, setShowBoundary, "Target region boundary"] as const,
+          ["showRoutes", showRoutes, setShowRoutes, "Collector routes"] as const,
+        ]).map(([key, val, setter, label]) => (
+          <label key={key} className="flex items-center gap-2 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={val}
+              onChange={(e) => setter(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-input accent-primary"
+            />
+            {label}
+          </label>
+        ))}
+      </div>
+
+      {/* ---- Map + Activity log ---- */}
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        {/* ---- MAP ---- */}
+        <div className="relative rounded-lg border border-border bg-[#f8fafb] overflow-hidden" style={{ minHeight: 500 }}>
+          <svg
+            viewBox={`${vbX} ${vbY} ${vbW} ${vbH}`}
+            className="h-full w-full"
+            style={{ minHeight: 500 }}
+          >
+            {/* Grid lines */}
+            {gridLats.map((lat) => (
+              <g key={`glat-${lat}`}>
+                <line
+                  x1={0} y1={projY(lat)} x2={svgW} y2={projY(lat)}
+                  stroke="var(--color-border)" strokeWidth="0.5" opacity="0.5"
+                />
+                <text x={4} y={projY(lat) - 3} fontSize="8" fill="var(--color-muted-foreground)" opacity="0.6">
+                  {lat}°
+                </text>
+              </g>
+            ))}
+            {gridLngs.map((lng) => (
+              <g key={`glng-${lng}`}>
+                <line
+                  x1={projX(lng)} y1={0} x2={projX(lng)} y2={svgH}
+                  stroke="var(--color-border)" strokeWidth="0.5" opacity="0.5"
+                />
+                <text x={projX(lng) + 3} y={12} fontSize="8" fill="var(--color-muted-foreground)" opacity="0.6">
+                  {lng}°
+                </text>
+              </g>
+            ))}
+
+            {/* Target region boundary */}
+            {showBoundary && regionPoly && (
+              <polygon
+                points={regionPoly}
+                fill="var(--color-primary)"
+                fillOpacity="0.06"
+                stroke="var(--color-primary)"
+                strokeWidth="1.5"
+                strokeDasharray="6 4"
+              />
+            )}
+
+            {/* Collector route lines */}
+            {showRoutes &&
+              routeSegments.map((seg, i) => (
+                <line
+                  key={`route-${i}`}
+                  x1={seg.x1} y1={seg.y1} x2={seg.x2} y2={seg.y2}
+                  stroke={seg.flagged ? "#dc2626" : "var(--color-muted-foreground)"}
+                  strokeWidth={seg.flagged ? 2.5 : 1.5}
+                  strokeDasharray={seg.flagged ? "0" : "5 3"}
+                  opacity={seg.flagged ? 0.9 : 0.5}
+                />
+              ))}
+
+            {/* Submission pins */}
+            {showPins &&
+              filtered.map((s) => {
+                const cx = projX(s.gpsCoords[1]);
+                const cy = projY(s.gpsCoords[0]);
+                const isHovered = hoveredPin === s.id;
+                return (
+                  <g key={s.id} onMouseEnter={() => setHoveredPin(s.id)} onMouseLeave={() => setHoveredPin(null)}>
+                    {/* Outer ring for hovered */}
+                    {isHovered && (
+                      <circle cx={cx} cy={cy} r={12} fill="none" stroke={severityColor[s.severity]} strokeWidth="1.5" opacity="0.4" />
+                    )}
+                    {/* Pin shadow */}
+                    <circle cx={cx} cy={cy + 1} r={6} fill="black" opacity="0.15" />
+                    {/* Main pin */}
+                    <circle cx={cx} cy={cy} r={6} fill={severityColor[s.severity]} stroke="white" strokeWidth="1.5" />
+                    {/* Tooltip */}
+                    {isHovered && (
+                      <g>
+                        <rect
+                          x={cx + 10} y={cy - 24} width={Math.max(100, s.collectorName.length * 6 + 20)} height={36}
+                          rx="4" fill="var(--color-card)" stroke="var(--color-border)" strokeWidth="0.5"
+                        />
+                        <text x={cx + 16} y={cy - 10} fontSize="9" fontWeight="600" fill="var(--color-foreground)">
+                          {s.collectorName}
+                        </text>
+                        <text x={cx + 16} y={cy + 2} fontSize="8" fill="var(--color-muted-foreground)">
+                          {s.location} · {s.severity}
+                        </text>
+                      </g>
+                    )}
+                  </g>
+                );
+              })}
+          </svg>
+
+          {/* Legend */}
+          <div className="absolute left-3 top-3 rounded-md border border-border bg-card/90 px-3 py-2 backdrop-blur-sm">
+            <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">QA status</p>
+            <div className="space-y-0.5">
+              {(["clean", "warning", "critical"] as QaSeverity[]).map((sev) => (
+                <div key={sev} className="flex items-center gap-1.5">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: severityColor[sev] }} />
+                  <span className="text-[10px] text-foreground">{severityLabel[sev]}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Zoom controls */}
+          <div className="absolute right-3 top-3 flex flex-col gap-1">
+            <button
+              onClick={() => setZoom((z) => Math.min(4, z * 1.4))}
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card text-sm font-medium text-foreground shadow-sm hover:bg-muted"
+            >
+              +
+            </button>
+            <button
+              onClick={() => setZoom((z) => Math.max(0.5, z / 1.4))}
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card text-sm font-medium text-foreground shadow-sm hover:bg-muted"
+            >
+              −
+            </button>
+            {zoom !== 1 && (
+              <button
+                onClick={() => setZoom(1)}
+                className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card text-[9px] font-medium text-muted-foreground shadow-sm hover:bg-muted"
+              >
+                1:1
+              </button>
+            )}
+          </div>
+
+          {/* Pin count */}
+          <div className="absolute bottom-3 left-3 rounded-md bg-card/80 px-2 py-1 text-[10px] text-muted-foreground backdrop-blur-sm">
+            {filtered.length} submission{filtered.length === 1 ? "" : "s"} shown
+          </div>
+        </div>
+
+        {/* ---- ACTIVITY LOG ---- */}
+        <div className="flex flex-col rounded-lg border border-border bg-card" style={{ maxHeight: 560 }}>
+          <div className="border-b border-border px-4 py-3">
+            <p className="text-sm font-medium text-foreground">Activity log</p>
+            <p className="text-xs text-muted-foreground">{events.length} event{events.length === 1 ? "" : "s"}</p>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {events.length === 0 ? (
+              <p className="px-4 py-6 text-center text-sm text-muted-foreground">No events match filters.</p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {events.map((ev) => (
+                  <li
+                    key={ev.id}
+                    className="group flex cursor-pointer items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
+                  >
+                    {/* Severity dot */}
+                    <span
+                      className="mt-1 inline-block h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                      style={{ backgroundColor: severityColor[ev.severity] }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-foreground truncate">{ev.collectorName}</span>
+                        <span
+                          className="rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none"
+                          style={{
+                            backgroundColor: ev.severity === "critical" ? "#fef2f2" : ev.severity === "warning" ? "#fffbeb" : "#f0fdf4",
+                            color: severityColor[ev.severity],
+                          }}
+                        >
+                          {severityLabel[ev.severity]}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-xs text-muted-foreground truncate">{ev.description}</p>
+                      <p className="mt-0.5 text-[10px] text-muted-foreground/70">{timeAgo(ev.submittedAt)}</p>
+                    </div>
+                    {/* Chevron */}
+                    <span className="mt-1 text-muted-foreground/40 transition-colors group-hover:text-foreground">
+                      ›
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
